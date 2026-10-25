@@ -1,142 +1,635 @@
 <!doctype html>
+
 <html lang="en">
+
 <head>
+
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Policy Dossier — Nigeria first. Then the world.</title>
-<meta name="description" content="Nigerian and global policy news, summarised and filed as it breaks.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800;900&display=swap" rel="stylesheet">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+>
+
+<title>Policy Dossier</title>
+
+<meta
+    name="description"
+    content="Concise policy, public affairs and current affairs coverage."
+>
+
+<link
+    href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800;900&family=Source+Serif+4:wght@400;600&display=swap"
+    rel="stylesheet"
+>
+
 <style>
-:root{--bg:#0a0a0a;--surface:#141414;--fg:#f5f5f5;--mute:#8f8f8f;--line:#262626;--ng:#2ecc71}
-@media (prefers-color-scheme:light){:root{--bg:#f6f5f2;--surface:#fff;--fg:#0a0a0a;--mute:#666;--line:#dcdad4;--ng:#0b7a3b}}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--fg);font:400 16px/1.55 Archivo,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-a{color:inherit;text-decoration:none}
-:focus-visible{outline:3px solid var(--fg);outline-offset:3px;border-radius:4px}
-.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
 
-/* top bar */
-.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.top .wrap{display:flex;align-items:center;gap:16px;height:64px}
-.brand{display:flex;align-items:baseline;gap:10px}
-.brand b{font-weight:900;font-size:30px;letter-spacing:-.07em;line-height:1}
-.brand span{font-weight:800;font-size:12px;letter-spacing:.22em;text-transform:uppercase}
-.sp{flex:1}
-.search{background:var(--surface);border:1px solid var(--line);color:var(--fg);border-radius:999px;padding:9px 16px;font:500 14px Archivo,sans-serif;width:min(240px,40vw)}
-.search::placeholder{color:var(--mute)}
-.xbtn{font-weight:700;font-size:14px;background:var(--fg);color:var(--bg);border-radius:999px;padding:9px 18px;white-space:nowrap}
-.xbtn:hover{opacity:.85}
+:root {
+    --bg:#090909;
+    --surface:#121212;
+    --fg:#f4f4f4;
+    --mute:#8f8f8f;
+    --line:#282828;
+    --accent:#2ecc71;
+}
 
-/* masthead */
-.mast{padding-top:56px;padding-bottom:28px}
-.eyebrow{font-weight:800;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute)}
-.mast h1{font-weight:900;font-size:clamp(44px,9vw,104px);line-height:.92;letter-spacing:-.055em;margin:14px 0 0;max-width:12ch}
-.mast h1 em{font-style:normal;color:var(--ng)}
-.mast p{color:var(--mute);max-width:48ch;margin:18px 0 0;font-size:17px}
+@media (prefers-color-scheme:light) {
 
-/* filters */
-.filters{display:flex;gap:8px;overflow-x:auto;padding:8px 0 24px;scrollbar-width:none}
-.filters::-webkit-scrollbar{display:none}
-.pill{flex:none;font:600 14px Archivo,sans-serif;color:var(--fg);background:none;border:1px solid var(--line);border-radius:999px;padding:8px 16px;cursor:pointer;transition:.15s}
-.pill:hover{border-color:var(--fg)}
-.pill[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+    :root {
+        --bg:#f7f6f2;
+        --surface:#fff;
+        --fg:#0b0b0b;
+        --mute:#696969;
+        --line:#dfdcd5;
+        --accent:#087a3b;
+    }
+}
 
-/* stories */
-.tag{display:inline-flex;gap:8px;align-items:center;font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
-.tag i{font-style:normal;color:var(--ng)}
-.tag i::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ng);margin-right:6px}
-.img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--line);border-radius:10px}
-.ph{aspect-ratio:16/9;border-radius:10px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;font-weight:900;font-size:44px;letter-spacing:-.07em;color:var(--line)}
-.time{color:var(--mute);font-size:13px}
-.lead{display:grid;grid-template-columns:1.25fr 1fr;gap:32px;align-items:center;padding:28px 0 40px;border-top:1px solid var(--fg)}
-.lead h2{font-weight:900;font-size:clamp(28px,4.4vw,48px);line-height:1.04;letter-spacing:-.035em;margin:14px 0}
-.lead p{color:var(--mute);font-size:18px;margin:0 0 16px}
-.lead:hover h2,.card:hover h3{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:36px 28px;padding-top:32px;border-top:1px solid var(--line)}
-.card{display:flex;flex-direction:column;gap:12px}
-.card h3{font-weight:800;font-size:21px;line-height:1.18;letter-spacing:-.02em;margin:0}
-.card p{color:var(--mute);font-size:15px;margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.empty{padding:80px 0;text-align:center;color:var(--mute)}
-.empty b{display:block;font-weight:900;font-size:72px;letter-spacing:-.07em;color:var(--line)}
-.skel{height:260px;border-radius:10px;background:linear-gradient(90deg,var(--surface),var(--line),var(--surface));background-size:200% 100%;animation:sh 1.4s infinite}
-@keyframes sh{to{background-position:-200% 0}}
-@media(prefers-reduced-motion:reduce){.skel{animation:none}html{scroll-behavior:auto}}
+* {
+    box-sizing:border-box;
+}
 
-footer{border-top:1px solid var(--line);margin-top:72px;padding:32px 0 48px;color:var(--mute);font-size:14px}
-footer .wrap{display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between}
-@media(max-width:760px){.sp{display:none}.search{flex:1;width:auto;min-width:0}.xbtn{padding:9px 14px}.lead{grid-template-columns:1fr;gap:18px}.brand span{display:none}.mast{padding-top:36px}}
+html {
+    scroll-behavior:smooth;
+}
+
+body {
+    margin:0;
+    background:var(--bg);
+    color:var(--fg);
+    font-family:Archivo,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+}
+
+a {
+    color:inherit;
+    text-decoration:none;
+}
+
+header {
+    border-bottom:1px solid var(--line);
+}
+
+.nav {
+    width:min(1180px,calc(100% - 40px));
+    height:72px;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.brand {
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.brand-mark {
+    font-size:32px;
+    font-weight:900;
+    letter-spacing:-.09em;
+}
+
+.brand-name {
+    font-size:13px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.2em;
+}
+
+.x-link {
+    color:var(--mute);
+    font-size:14px;
+    font-weight:600;
+}
+
+.x-link:hover {
+    color:var(--fg);
+}
+
+main {
+    width:min(1180px,calc(100% - 40px));
+    margin:0 auto;
+    padding:50px 0 80px;
+}
+
+.intro {
+    padding-bottom:34px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:32px;
+}
+
+.eyebrow {
+    margin-bottom:10px;
+    color:var(--accent);
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+}
+
+.intro h1 {
+    max-width:780px;
+    margin:0;
+    font-size:clamp(38px,7vw,72px);
+    line-height:.98;
+    font-weight:900;
+    letter-spacing:-.055em;
+}
+
+.intro p {
+    max-width:650px;
+    margin:18px 0 0;
+    color:var(--mute);
+    font:400 18px/1.55 "Source Serif 4",Georgia,serif;
+}
+
+.hero {
+    display:grid;
+    grid-template-columns:1.35fr 1fr;
+    gap:30px;
+    padding-bottom:36px;
+    margin-bottom:34px;
+    border-bottom:1px solid var(--line);
+}
+
+.hero-image {
+    width:100%;
+    aspect-ratio:16/10;
+    object-fit:cover;
+    border-radius:12px;
+    background:var(--surface);
+}
+
+.hero-copy {
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+}
+
+.region {
+    color:var(--accent);
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.17em;
+    text-transform:uppercase;
+}
+
+.hero h2 {
+    margin:11px 0 15px;
+    font-size:clamp(30px,4vw,49px);
+    line-height:1.04;
+    letter-spacing:-.045em;
+    font-weight:900;
+}
+
+.summary {
+    margin:0;
+    color:var(--mute);
+    font:400 18px/1.55 "Source Serif 4",Georgia,serif;
+}
+
+.date {
+    margin-top:18px;
+    color:var(--mute);
+    font-size:12px;
+}
+
+.grid {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:28px;
+}
+
+.card {
+    padding-bottom:28px;
+    border-bottom:1px solid var(--line);
+}
+
+.card-image {
+    width:100%;
+    aspect-ratio:16/9;
+    object-fit:cover;
+    border-radius:9px;
+    margin-bottom:17px;
+    background:var(--surface);
+}
+
+.card h3 {
+    margin:9px 0 10px;
+    font-size:22px;
+    line-height:1.12;
+    letter-spacing:-.025em;
+    font-weight:800;
+}
+
+.card .summary {
+    font-size:16px;
+}
+
+.empty {
+    padding:60px 0;
+    text-align:center;
+    color:var(--mute);
+}
+
+footer {
+    border-top:1px solid var(--line);
+}
+
+.footer-inner {
+    width:min(1180px,calc(100% - 40px));
+    margin:0 auto;
+    padding:28px 0;
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+    color:var(--mute);
+    font-size:12px;
+}
+
+@media (max-width:800px) {
+
+    .hero {
+        grid-template-columns:1fr;
+    }
+
+    .grid {
+        grid-template-columns:1fr;
+    }
+
+    .hero h2 {
+        font-size:34px;
+    }
+}
+
 </style>
-</head>
-<body>
-<header class="top"><div class="wrap">
-  <a class="brand" href="./" aria-label="Policy Dossier home"><b>PD</b><span>Policy Dossier</span></a>
-  <div class="sp"></div>
-  <input class="search" id="q" type="search" placeholder="Search stories" aria-label="Search stories">
-  <a class="xbtn" id="xlink" href="https://x.com/YOUR_HANDLE" target="_blank" rel="noopener">Follow on X</a>
-</div></header>
 
-<section class="wrap mast">
-  <div class="eyebrow" id="today"></div>
-  <h1>Nigeria first. <em>Then</em> the world.</h1>
-  <p>Policy, politics and the economy from trusted outlets, summarised and filed the moment it breaks.</p>
+</head>
+
+<body>
+
+<header>
+
+<div class="nav">
+
+<a
+    class="brand"
+    href="./"
+>
+
+<span class="brand-mark">
+PD
+</span>
+
+<span class="brand-name">
+Policy Dossier
+</span>
+
+</a>
+
+<a
+    class="x-link"
+    href="https://x.com/Policydossier"
+    target="_blank"
+    rel="noopener"
+>
+Follow on X
+</a>
+
+</div>
+
+</header>
+
+
+<main>
+
+<section class="intro">
+
+<div class="eyebrow">
+Policy · Public Affairs · Current Affairs
+</div>
+
+<h1>
+Policy Dossier
+</h1>
+
+<p>
+Clear, concise coverage of developments shaping
+Nigeria and the wider world.
+</p>
+
 </section>
 
-<main class="wrap">
-  <nav class="filters" id="filters" aria-label="Filter stories"></nav>
-  <div id="feed" aria-live="polite"><div class="skel"></div></div>
+
+<div id="content">
+
+<div class="empty">
+Loading latest stories…
+</div>
+
+</div>
+
 </main>
 
-<footer><div class="wrap">
-  <span>© Policy Dossier. Summaries are written automatically. Always read the original source.</span>
-  <a href="https://x.com/YOUR_HANDLE" id="xfoot" target="_blank" rel="noopener">Follow us on X →</a>
-</div></footer>
+
+<footer>
+
+<div class="footer-inner">
+
+<span>
+© Policy Dossier
+</span>
+
+<a
+    href="https://x.com/Policydossier"
+    target="_blank"
+    rel="noopener"
+>
+@Policydossier
+</a>
+
+</div>
+
+</footer>
+
 
 <script>
-const X_URL = "https://x.com/YOUR_HANDLE"; // set your X page here
-document.getElementById("xlink").href = document.getElementById("xfoot").href = X_URL;
-document.getElementById("today").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-let stories = [], active = "All", term = "";
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function ago(iso){
-  const m = Math.max(1, Math.round((Date.now() - new Date(iso)) / 60000));
-  if (m < 60) return m + " min ago";
-  if (m < 1440) return Math.round(m / 60) + " h ago";
-  return new Date(iso).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+
+const content =
+    document.getElementById(
+        "content"
+    );
+
+
+function escapeHTML(value) {
+
+    return String(
+        value ?? ""
+    )
+
+    .replace(
+        /&/g,
+        "&amp;"
+    )
+
+    .replace(
+        /</g,
+        "&lt;"
+    )
+
+    .replace(
+        />/g,
+        "&gt;"
+    )
+
+    .replace(
+        /"/g,
+        "&quot;"
+    )
+
+    .replace(
+        /'/g,
+        "&#039;"
+    );
 }
-const tag = s => `<span class="tag">${s.region === "Nigeria" ? "<i>Nigeria</i>" : "World"}<span>${esc(s.source)}</span></span>`;
-const pic = s => s.image
-  ? `<img class="img" src="${esc(s.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=ph>PD</div>'">`
-  : `<div class="ph">PD</div>`;
-const href = s => `stories/${esc(s.id)}.html`;
-function render(){
-  const t = term.toLowerCase();
-  const list = stories.filter(s => (active === "All" || s.source === active || s.region === active)
-    && (!t || (s.title + " " + s.summary).toLowerCase().includes(t)));
-  const feed = document.getElementById("feed");
-  if (!list.length) {
-    feed.innerHTML = `<div class="empty"><b>PD</b>${stories.length ? "No stories match that." : "No stories filed yet. The next automatic update will fill this page."}</div>`;
-    return;
-  }
-  const [a, ...rest] = list;
-  feed.innerHTML = `
-    <a class="lead" href="${href(a)}">
-      ${pic(a)}
-      <div>${tag(a)}<h2>${esc(a.title)}</h2><p>${esc(a.summary)}</p><span class="time">${ago(a.published)}</span></div>
-    </a>
-    <div class="grid">${rest.map(s => `
-      <a class="card" href="${href(s)}">${pic(s)}${tag(s)}<h3>${esc(s.title)}</h3><p>${esc(s.summary)}</p><span class="time">${ago(s.published)}</span></a>`).join("")}</div>`;
+
+
+function storyURL(story) {
+
+    return (
+        `stories/${encodeURIComponent(
+            story.id
+        )}.html`
+    );
 }
-function filters(){
-  const names = ["All", "Nigeria", "World", ...new Set(stories.map(s => s.source))];
-  const nav = document.getElementById("filters");
-  nav.innerHTML = names.map(n => `<button class="pill" aria-pressed="${n === active}" data-n="${esc(n)}">${esc(n)}</button>`).join("");
-  nav.querySelectorAll("button").forEach(b => b.onclick = () => { active = b.dataset.n; filters(); render(); });
+
+
+function imageHTML(
+    story,
+    className
+) {
+
+    if (!story.image) {
+        return "";
+    }
+
+    return `
+        <img
+            class="${className}"
+            src="${escapeHTML(story.image)}"
+            alt="${escapeHTML(story.title)}"
+            loading="lazy"
+            onerror="this.remove()"
+        >
+    `;
 }
-document.getElementById("q").oninput = e => { term = e.target.value; render(); };
-fetch("stories.json", {cache:"no-cache"}).then(r => r.json()).then(d => { stories = d; })
-  .catch(() => {}).finally(() => { filters(); render(); });
+
+
+function dateText(value) {
+
+    if (!value) {
+        return "";
+    }
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "";
+    }
+
+
+    return date.toLocaleDateString(
+        "en-GB",
+        {
+            day:"numeric",
+            month:"short",
+            year:"numeric"
+        }
+    );
+}
+
+
+function render(stories) {
+
+    if (
+        !Array.isArray(stories)
+        || stories.length === 0
+    ) {
+
+        content.innerHTML = `
+            <div class="empty">
+                No stories available yet.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    const hero =
+        stories[0];
+
+
+    const remaining =
+        stories.slice(
+            1
+        );
+
+
+    const heroHTML = `
+
+        <a
+            class="hero"
+            href="${storyURL(hero)}"
+        >
+
+            <div>
+                ${imageHTML(
+                    hero,
+                    "hero-image"
+                )}
+            </div>
+
+            <div class="hero-copy">
+
+                <div class="region">
+                    ${escapeHTML(
+                        hero.region || "World"
+                    )}
+                </div>
+
+                <h2>
+                    ${escapeHTML(
+                        hero.title
+                    )}
+                </h2>
+
+                <p class="summary">
+                    ${escapeHTML(
+                        hero.summary || ""
+                    )}
+                </p>
+
+                <div class="date">
+                    ${escapeHTML(
+                        dateText(
+                            hero.published
+                        )
+                    )}
+                </div>
+
+            </div>
+
+        </a>
+    `;
+
+
+    const cards = remaining
+        .map(
+            story => `
+
+                <a
+                    class="card"
+                    href="${storyURL(story)}"
+                >
+
+                    ${imageHTML(
+                        story,
+                        "card-image"
+                    )}
+
+                    <div class="region">
+                        ${escapeHTML(
+                            story.region || "World"
+                        )}
+                    </div>
+
+                    <h3>
+                        ${escapeHTML(
+                            story.title
+                        )}
+                    </h3>
+
+                    <p class="summary">
+                        ${escapeHTML(
+                            story.summary || ""
+                        )}
+                    </p>
+
+                    <div class="date">
+                        ${escapeHTML(
+                            dateText(
+                                story.published
+                            )
+                        )}
+                    </div>
+
+                </a>
+            `
+        )
+
+        .join("");
+
+
+    content.innerHTML = `
+
+        ${heroHTML}
+
+        <section class="grid">
+            ${cards}
+        </section>
+    `;
+}
+
+
+fetch(
+    `stories.json?v=${Date.now()}`
+)
+
+.then(
+    response => {
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Unable to load stories."
+            );
+        }
+
+        return response.json();
+    }
+)
+
+.then(
+    render
+)
+
+.catch(
+    error => {
+
+        console.error(
+            error
+        );
+
+        content.innerHTML = `
+            <div class="empty">
+                Unable to load stories right now.
+            </div>
+        `;
+    }
+);
+
 </script>
+
 </body>
+
 </html>
