@@ -43,6 +43,7 @@
 >
 
 <meta property="og:image" content="https://policydossierhq-collab.github.io/Policy-dossier/images/5a451d351ee8d82d.webp">
+<meta property="og:image:type" content="image/jpeg">
 
 <meta
     name="twitter:card"
@@ -69,21 +70,23 @@
 <style>
 
 :root {
-    --bg:#0a0a0a;
-    --fg:#f5f5f5;
-    --mute:#8f8f8f;
-    --line:#262626;
-    --ng:#2ecc71;
+    --bg:#090909;
+    --surface:#121212;
+    --fg:#f4f4f4;
+    --mute:#8d8d8d;
+    --line:#282828;
+    --accent:#2ecc71;
 }
 
 @media (prefers-color-scheme:light) {
 
     :root {
-        --bg:#f6f5f2;
-        --fg:#0a0a0a;
-        --mute:#666;
-        --line:#dcdad4;
-        --ng:#0b7a3b;
+        --bg:#f7f6f2;
+        --surface:#fff;
+        --fg:#0b0b0b;
+        --mute:#696969;
+        --line:#dedbd4;
+        --accent:#087a3b;
     }
 }
 
@@ -96,6 +99,7 @@ body {
     background:var(--bg);
     color:var(--fg);
     font:400 16px/1.55 Archivo,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
 }
 
 a {
@@ -111,80 +115,89 @@ a {
     max-width:1120px;
     margin:0 auto;
     padding:0 20px;
-    height:64px;
+    height:68px;
     display:flex;
-    justify-content:space-between;
     align-items:center;
+    justify-content:space-between;
+}
+
+.brand {
+    display:flex;
+    align-items:center;
+    gap:10px;
 }
 
 .brand b {
-    font-weight:900;
     font-size:30px;
-    letter-spacing:-.07em;
+    font-weight:900;
+    letter-spacing:-.08em;
 }
 
 .brand span {
-    font-weight:800;
     font-size:12px;
-    letter-spacing:.22em;
+    font-weight:800;
+    letter-spacing:.2em;
     text-transform:uppercase;
-    margin-left:10px;
 }
 
 .back {
-    font-weight:600;
     font-size:14px;
+    font-weight:600;
     color:var(--mute);
+}
+
+.back:hover {
+    color:var(--fg);
 }
 
 article {
-    max-width:720px;
+    max-width:760px;
     margin:0 auto;
-    padding:48px 20px 80px;
+    padding:52px 20px 90px;
 }
 
 .tag {
-    display:inline-flex;
-    font-weight:800;
+    color:var(--accent);
     font-size:11px;
-    letter-spacing:.16em;
+    font-weight:800;
+    letter-spacing:.17em;
     text-transform:uppercase;
-    color:var(--ng);
 }
 
 h1 {
-    font-weight:900;
-    font-size:clamp(32px,6vw,54px);
+    margin:15px 0 16px;
+    font-size:clamp(34px,6vw,58px);
     line-height:1.03;
-    letter-spacing:-.04em;
-    margin:16px 0 14px;
+    letter-spacing:-.045em;
+    font-weight:900;
 }
 
 .meta {
-    color:var(--mute);
-    font-size:14px;
+    margin-bottom:30px;
     padding-bottom:24px;
     border-bottom:1px solid var(--line);
-    margin-bottom:28px;
+    color:var(--mute);
+    font-size:14px;
 }
 
 .hero {
     display:block;
     width:100%;
-    max-height:500px;
+    max-height:520px;
     object-fit:cover;
-    border-radius:10px;
-    margin-bottom:30px;
+    border-radius:11px;
+    margin:0 0 34px;
+    background:var(--line);
 }
 
 .body p {
-    font:400 19px/1.75 "Source Serif 4",Georgia,serif;
-    margin:0 0 1.25em;
+    margin:0 0 1.3em;
+    font:400 19px/1.78 "Source Serif 4",Georgia,serif;
 }
 
 .source-line {
-    margin-top:36px;
-    padding-top:18px;
+    margin:40px 0 0;
+    padding-top:19px;
     border-top:1px solid var(--line);
     color:var(--mute);
     font-size:14px;
@@ -192,12 +205,17 @@ h1 {
 
 .source-line strong {
     color:var(--fg);
+    font-weight:700;
 }
 
-.note {
+.follow {
+    margin-top:18px;
     color:var(--mute);
     font-size:13px;
-    margin-top:18px;
+}
+
+.follow a:hover {
+    color:var(--fg);
 }
 
 </style>
@@ -229,30 +247,32 @@ h1 {
 
 </header>
 
+
 <article>
 
-<span class="tag">
+<div class="tag">
 Nigeria
-</span>
+</div>
 
-<h1>U-17 Women’s World Cup: 3 African countries qualify for Round of 16 [Full list]</h1>
+<h1>
+U-17 Women’s World Cup: 3 African countries qualify for Round of 16 [Full list]
+</h1>
 
 <div class="meta">
 2026-10-25
 </div>
 
-<img class="hero" src="https://policydossierhq-collab.github.io/Policy-dossier/images/5a451d351ee8d82d.webp" alt="" loading="eager">
+<img class="hero" src="https://policydossierhq-collab.github.io/Policy-dossier/images/5a451d351ee8d82d.webp" alt="U-17 Women’s World Cup: 3 African countries qualify for Round of 16 [Full list]" loading="eager">
 
 <div class="body">
 <p>Three African nations—Nigeria, Ghana, and Morocco—have successfully qualified for the Round of 16 in the 2026 FIFA U-17 Women’s World Cup, hosted in Morocco. This achievement highlights the growing presence and competitiveness of African football on the global stage.</p><p>The tournament showcases some of the best young women’s football teams from around the world, and the inclusion of these three teams in the knockout stage underscores their determination and talent. These teams are set to compete against a diverse field that includes several strong contenders such as Germany, Japan, China, Spain, and the United States, among others.</p><p>The advancement of Nigeria, Ghana, and Morocco not only marks a significant milestone for these countries but also strengthens Africa’s representation in international women&#x27;s football. As they compete for a spot in the quarter-finals, their performances will be pivotal in demonstrating the continent&#x27;s potential in the sport.</p><p>As the tournament progresses, fans will be keen to follow how these teams fare against their adversaries in the knockout rounds. The success in reaching this stage reflects the ongoing development of women&#x27;s football within Africa and aims to inspire further growth and investment in the sport on the continent.</p>
 </div>
 
 <p class="source-line">
-Source:
-<strong>Vanguard</strong>
+Source: <strong>Vanguard</strong>
 </p>
 
-<p class="note">
+<p class="follow">
 
 <a
     href="https://x.com/Policydossier"

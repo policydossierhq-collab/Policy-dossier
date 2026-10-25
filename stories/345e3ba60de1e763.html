@@ -43,6 +43,7 @@
 >
 
 <meta property="og:image" content="https://policydossierhq-collab.github.io/Policy-dossier/images/345e3ba60de1e763.webp">
+<meta property="og:image:type" content="image/jpeg">
 
 <meta
     name="twitter:card"
@@ -69,21 +70,23 @@
 <style>
 
 :root {
-    --bg:#0a0a0a;
-    --fg:#f5f5f5;
-    --mute:#8f8f8f;
-    --line:#262626;
-    --ng:#2ecc71;
+    --bg:#090909;
+    --surface:#121212;
+    --fg:#f4f4f4;
+    --mute:#8d8d8d;
+    --line:#282828;
+    --accent:#2ecc71;
 }
 
 @media (prefers-color-scheme:light) {
 
     :root {
-        --bg:#f6f5f2;
-        --fg:#0a0a0a;
-        --mute:#666;
-        --line:#dcdad4;
-        --ng:#0b7a3b;
+        --bg:#f7f6f2;
+        --surface:#fff;
+        --fg:#0b0b0b;
+        --mute:#696969;
+        --line:#dedbd4;
+        --accent:#087a3b;
     }
 }
 
@@ -96,6 +99,7 @@ body {
     background:var(--bg);
     color:var(--fg);
     font:400 16px/1.55 Archivo,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
 }
 
 a {
@@ -111,80 +115,89 @@ a {
     max-width:1120px;
     margin:0 auto;
     padding:0 20px;
-    height:64px;
+    height:68px;
     display:flex;
-    justify-content:space-between;
     align-items:center;
+    justify-content:space-between;
+}
+
+.brand {
+    display:flex;
+    align-items:center;
+    gap:10px;
 }
 
 .brand b {
-    font-weight:900;
     font-size:30px;
-    letter-spacing:-.07em;
+    font-weight:900;
+    letter-spacing:-.08em;
 }
 
 .brand span {
-    font-weight:800;
     font-size:12px;
-    letter-spacing:.22em;
+    font-weight:800;
+    letter-spacing:.2em;
     text-transform:uppercase;
-    margin-left:10px;
 }
 
 .back {
-    font-weight:600;
     font-size:14px;
+    font-weight:600;
     color:var(--mute);
+}
+
+.back:hover {
+    color:var(--fg);
 }
 
 article {
-    max-width:720px;
+    max-width:760px;
     margin:0 auto;
-    padding:48px 20px 80px;
+    padding:52px 20px 90px;
 }
 
 .tag {
-    display:inline-flex;
-    font-weight:800;
+    color:var(--accent);
     font-size:11px;
-    letter-spacing:.16em;
+    font-weight:800;
+    letter-spacing:.17em;
     text-transform:uppercase;
-    color:var(--ng);
 }
 
 h1 {
-    font-weight:900;
-    font-size:clamp(32px,6vw,54px);
+    margin:15px 0 16px;
+    font-size:clamp(34px,6vw,58px);
     line-height:1.03;
-    letter-spacing:-.04em;
-    margin:16px 0 14px;
+    letter-spacing:-.045em;
+    font-weight:900;
 }
 
 .meta {
-    color:var(--mute);
-    font-size:14px;
+    margin-bottom:30px;
     padding-bottom:24px;
     border-bottom:1px solid var(--line);
-    margin-bottom:28px;
+    color:var(--mute);
+    font-size:14px;
 }
 
 .hero {
     display:block;
     width:100%;
-    max-height:500px;
+    max-height:520px;
     object-fit:cover;
-    border-radius:10px;
-    margin-bottom:30px;
+    border-radius:11px;
+    margin:0 0 34px;
+    background:var(--line);
 }
 
 .body p {
-    font:400 19px/1.75 "Source Serif 4",Georgia,serif;
-    margin:0 0 1.25em;
+    margin:0 0 1.3em;
+    font:400 19px/1.78 "Source Serif 4",Georgia,serif;
 }
 
 .source-line {
-    margin-top:36px;
-    padding-top:18px;
+    margin:40px 0 0;
+    padding-top:19px;
     border-top:1px solid var(--line);
     color:var(--mute);
     font-size:14px;
@@ -192,12 +205,17 @@ h1 {
 
 .source-line strong {
     color:var(--fg);
+    font-weight:700;
 }
 
-.note {
+.follow {
+    margin-top:18px;
     color:var(--mute);
     font-size:13px;
-    margin-top:18px;
+}
+
+.follow a:hover {
+    color:var(--fg);
 }
 
 </style>
@@ -229,30 +247,32 @@ h1 {
 
 </header>
 
+
 <article>
 
-<span class="tag">
+<div class="tag">
 Nigeria
-</span>
+</div>
 
-<h1>El Clásico: Mbappé scores brace as Madrid Beat Barcelona 2-1</h1>
+<h1>
+El Clásico: Mbappé scores brace as Madrid Beat Barcelona 2-1
+</h1>
 
 <div class="meta">
 2026-10-25
 </div>
 
-<img class="hero" src="https://policydossierhq-collab.github.io/Policy-dossier/images/345e3ba60de1e763.webp" alt="" loading="eager">
+<img class="hero" src="https://policydossierhq-collab.github.io/Policy-dossier/images/345e3ba60de1e763.webp" alt="El Clásico: Mbappé scores brace as Madrid Beat Barcelona 2-1" loading="eager">
 
 <div class="body">
 <p>In a much-anticipated El Clásico on Sunday, Real Madrid triumphed over FC Barcelona with a score of 2-1, marking a significant development in the La Liga title race. Kylian Mbappé was the standout player, scoring both goals for Real Madrid and showcasing his crucial role in the team&#x27;s success.</p><p>The match kicked off with intense energy as both teams fought to assert dominance early on. Mbappé opened the scoring just before halftime in the 41st minute, converting after a defensive blunder from a Barcelona player allowed the ball to fall into his path. This goal put Real Madrid ahead, setting the stage for a competitive second half.</p><p>Barcelona responded strongly after the break, with their captain Raphinha equalizing in the 61st minute. His goal momentarily lifted the spirits of the home crowd as the Catalan side sought to preserve their unbeaten start to the league season at nine matches.</p><p>However, the match turned once again when Mbappé netted his second goal in the 87th minute. A well-timed assist from substitute Eduardo Camavinga ensured that Mbappé had a clear opportunity to score, and he did not miss, solidifying the victory for Real Madrid.</p><p>This result is particularly significant for Barcelona, which was aiming to extend their unbeaten streak to ten matches—a feat unmatched by any team so far in this season&#x27;s competition. For Real Madrid, the victory is a crucial boost in their pursuit of the La Liga title, as they strive to close the gap on their rivals at the top of the table. Mbappé’s performance not only underlined his value to the team but also the enduring competitive spirit between these two historic clubs.</p>
 </div>
 
 <p class="source-line">
-Source:
-<strong>Punch</strong>
+Source: <strong>Punch</strong>
 </p>
 
-<p class="note">
+<p class="follow">
 
 <a
     href="https://x.com/Policydossier"
