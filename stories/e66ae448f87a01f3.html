@@ -49,6 +49,18 @@
     content="summary_large_image"
 >
 
+<meta
+    name="twitter:title"
+    content="Real Madrid’s Courtois Out Of Clasico With Flu"
+>
+
+<meta
+    name="twitter:description"
+    content="Real Madrid ruled Thibaut Courtois out of Sunday’s Clasico against Barcelona after he came down with flu. Andriy Lunin is expected to start."
+>
+
+<meta name="twitter:image" content="https://www.channelstv.com/2026/10/25/real-madrids-courtois-out-of-clasico-with-flu/#primaryimage">
+
 <link
     href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=Source+Serif+4:wght@400;600&display=swap"
     rel="stylesheet"
@@ -57,160 +69,135 @@
 <style>
 
 :root {
-    --bg: #0a0a0a;
-    --surface: #141414;
-    --fg: #f5f5f5;
-    --mute: #8f8f8f;
-    --line: #262626;
-    --ng: #2ecc71;
+    --bg:#0a0a0a;
+    --fg:#f5f5f5;
+    --mute:#8f8f8f;
+    --line:#262626;
+    --ng:#2ecc71;
 }
 
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme:light) {
+
     :root {
-        --bg: #f6f5f2;
-        --surface: #ffffff;
-        --fg: #0a0a0a;
-        --mute: #666666;
-        --line: #dcdad4;
-        --ng: #0b7a3b;
+        --bg:#f6f5f2;
+        --fg:#0a0a0a;
+        --mute:#666;
+        --line:#dcdad4;
+        --ng:#0b7a3b;
     }
 }
 
 * {
-    box-sizing: border-box;
+    box-sizing:border-box;
 }
 
 body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--fg);
-    font: 400 16px/1.55 Archivo, system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased;
+    margin:0;
+    background:var(--bg);
+    color:var(--fg);
+    font:400 16px/1.55 Archivo,system-ui,sans-serif;
 }
 
 a {
-    color: inherit;
-    text-decoration: none;
+    color:inherit;
+    text-decoration:none;
 }
 
 .top {
-    border-bottom: 1px solid var(--line);
+    border-bottom:1px solid var(--line);
 }
 
 .bar {
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 0 20px;
-    height: 64px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    max-width:1120px;
+    margin:0 auto;
+    padding:0 20px;
+    height:64px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
 }
 
 .brand b {
-    font-weight: 900;
-    font-size: 30px;
-    letter-spacing: -.07em;
+    font-weight:900;
+    font-size:30px;
+    letter-spacing:-.07em;
 }
 
 .brand span {
-    font-weight: 800;
-    font-size: 12px;
-    letter-spacing: .22em;
-    text-transform: uppercase;
-    margin-left: 10px;
+    font-weight:800;
+    font-size:12px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    margin-left:10px;
 }
 
 .back {
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--mute);
-}
-
-.back:hover {
-    color: var(--fg);
+    font-weight:600;
+    font-size:14px;
+    color:var(--mute);
 }
 
 article {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 48px 20px 80px;
+    max-width:720px;
+    margin:0 auto;
+    padding:48px 20px 80px;
 }
 
 .tag {
-    display: inline-flex;
-    gap: 8px;
-    font-weight: 800;
-    font-size: 11px;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: var(--mute);
-}
-
-.tag i {
-    font-style: normal;
-    color: var(--ng);
+    display:inline-flex;
+    font-weight:800;
+    font-size:11px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--ng);
 }
 
 h1 {
-    font-weight: 900;
-    font-size: clamp(32px, 6vw, 54px);
-    line-height: 1.03;
-    letter-spacing: -.04em;
-    margin: 16px 0 14px;
+    font-weight:900;
+    font-size:clamp(32px,6vw,54px);
+    line-height:1.03;
+    letter-spacing:-.04em;
+    margin:16px 0 14px;
 }
 
 .meta {
-    color: var(--mute);
-    font-size: 14px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 28px;
+    color:var(--mute);
+    font-size:14px;
+    padding-bottom:24px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:28px;
 }
 
 .hero {
-    display: block;
-    width: 100%;
-    max-height: 500px;
-    object-fit: cover;
-    border-radius: 10px;
-    background: var(--line);
-}
-
-.credit {
-    color: var(--mute);
-    font-size: 12px;
-    margin: 7px 0 30px;
+    display:block;
+    width:100%;
+    max-height:500px;
+    object-fit:cover;
+    border-radius:10px;
+    margin-bottom:30px;
 }
 
 .body p {
-    font: 400 19px/1.75 "Source Serif 4", Georgia, serif;
-    margin: 0 0 1.25em;
+    font:400 19px/1.75 "Source Serif 4",Georgia,serif;
+    margin:0 0 1.25em;
 }
 
 .source-line {
-    margin-top: 36px;
-    padding-top: 18px;
-    border-top: 1px solid var(--line);
-    color: var(--mute);
-    font-size: 14px;
+    margin-top:36px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+    color:var(--mute);
+    font-size:14px;
 }
 
-.source-line a {
-    color: var(--fg);
-    font-weight: 700;
-    text-decoration: underline;
-    text-underline-offset: 3px;
+.source-line strong {
+    color:var(--fg);
 }
 
 .note {
-    color: var(--mute);
-    font-size: 13px;
-    margin-top: 18px;
-}
-
-.note a:hover {
-    color: var(--fg);
+    color:var(--mute);
+    font-size:13px;
+    margin-top:18px;
 }
 
 </style>
@@ -245,8 +232,7 @@ h1 {
 <article>
 
 <span class="tag">
-<i>Nigeria</i>
-<span>Channels TV</span>
+Nigeria
 </span>
 
 <h1>Real Madrid’s Courtois Out Of Clasico With Flu</h1>
@@ -255,7 +241,7 @@ h1 {
 2026-10-25
 </div>
 
-<img class="hero" src="https://www.channelstv.com/2026/10/25/real-madrids-courtois-out-of-clasico-with-flu/#primaryimage" alt="" loading="eager"><div class="credit">Image: Channels TV</div>
+<img class="hero" src="https://www.channelstv.com/2026/10/25/real-madrids-courtois-out-of-clasico-with-flu/#primaryimage" alt="" loading="eager">
 
 <div class="body">
 <p>Real Madrid goalkeeper Thibaut Courtois will miss Sunday’s Clasico against Barcelona after falling ill with flu, the club announced a few hours before the match. Madrid described him as a last-minute withdrawal from the squad.</p><p>Ukrainian goalkeeper Andriy Lunin is set to replace Courtois against Barcelona, who are unbeaten under coach Hansi Flick. The match is at Camp Nou.</p><p>The absence adds to Madrid’s personnel problems for the game: winger Vinicius Junior is also unavailable because of suspension. Madrid are third in the league, six points behind leaders Barcelona, making the meeting significant to the title race.</p>
@@ -263,16 +249,11 @@ h1 {
 
 <p class="source-line">
 Source:
-<a
-    href="https://www.channelstv.com/2026/10/25/real-madrids-courtois-out-of-clasico-with-flu/"
-    target="_blank"
-    rel="noopener"
->
-Channels TV
-</a>
+<strong>Channels TV</strong>
 </p>
 
 <p class="note">
+
 <a
     href="https://x.com/Policydossier"
     target="_blank"
@@ -280,6 +261,7 @@ Channels TV
 >
 Follow Policy Dossier on X
 </a>
+
 </p>
 
 </article>
