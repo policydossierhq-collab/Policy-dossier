@@ -1,29 +1,3 @@
-"""
-Policy Dossier
-
-Each run:
-
-1. Post ONE previously deployed story to X.
-2. Fetch current news from RSS feeds.
-3. Prioritise Nigeria.
-4. Select up to 4 stories from different publishers.
-5. Fetch each original article.
-6. Extract article text.
-7. Find the actual story photograph.
-8. Download and convert the photograph to JPEG.
-9. Use OpenAI to create:
-   - a short homepage/X teaser
-   - a fuller Policy Dossier article
-10. Generate Policy Dossier story pages.
-11. Queue ONE new story for X on the next run.
-12. Save stories.json.
-
-Publisher names are shown publicly ONLY at the bottom
-of individual articles:
-
-    Source: Publisher
-"""
-
 import calendar
 import datetime as dt
 import hashlib
@@ -95,23 +69,27 @@ FEEDS = {
 
 
 MAX_NEW_PER_RUN = 4
-MAX_X_POSTS_PER_RUN = 1
+
 KEEP = 200
 
 STORIES_FILE = "stories.json"
 
 IMAGES_DIR = Path("images")
+
 STORY_PAGES_DIR = Path("stories")
+
 
 SITE_URL = (
     os.environ.get("SITE_URL")
-    or "https://YOUR-SITE.com"
+    or "https://policydossierhq-collab.github.io/Policy-dossier"
 ).rstrip("/")
+
 
 X_URL = (
     os.environ.get("X_URL")
-    or "https://x.com/YOUR_HANDLE"
+    or "https://x.com/Policydossier"
 )
+
 
 MODEL = (
     os.environ.get("OPENAI_MODEL")
@@ -120,7 +98,7 @@ MODEL = (
 
 
 # ============================================================
-# GENERAL TEXT HELPERS
+# TEXT HELPERS
 # ============================================================
 
 def clean_text(value):
@@ -147,53 +125,6 @@ def clean_text(value):
     return value.strip()
 
 
-def normalise_ai_text(value):
-
-    if value is None:
-        return ""
-
-    if isinstance(value, str):
-        return value.strip()
-
-    if isinstance(value, dict):
-
-        parts = []
-
-        for item in value.values():
-
-            text = normalise_ai_text(
-                item
-            )
-
-            if text:
-                parts.append(text)
-
-        return "\n\n".join(
-            parts
-        ).strip()
-
-    if isinstance(value, list):
-
-        parts = []
-
-        for item in value:
-
-            text = normalise_ai_text(
-                item
-            )
-
-            if text:
-                parts.append(text)
-
-        return "\n\n".join(
-            parts
-        ).strip()
-
-    return str(
-        value
-    ).strip()
-
-
 def parse_ai_json(text):
 
     text = (
@@ -201,20 +132,18 @@ def parse_ai_json(text):
         or ""
     ).strip()
 
-    if text.startswith("```"):
+    text = re.sub(
+        r"^```(?:json)?\s*",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
 
-        text = re.sub(
-            r"^```(?:json)?\s*",
-            "",
-            text,
-            flags=re.IGNORECASE,
-        )
-
-        text = re.sub(
-            r"\s*```$",
-            "",
-            text,
-        )
+    text = re.sub(
+        r"\s*```$",
+        "",
+        text,
+    )
 
     try:
 
@@ -242,7 +171,7 @@ def parse_ai_json(text):
 
 
 # ============================================================
-# FETCH WEBPAGE
+# FETCH ARTICLE
 # ============================================================
 
 def fetch_page(url):
@@ -268,6 +197,7 @@ def fetch_page(url):
             },
         )
 
+
         with urllib.request.urlopen(
             request,
             timeout=15,
@@ -280,10 +210,11 @@ def fetch_page(url):
                 "ignore",
             )
 
+
     except Exception as error:
 
         print(
-            "Could not fetch:",
+            "Could not fetch article:",
             url,
             error,
         )
@@ -300,9 +231,12 @@ def extract_paragraphs(container):
     if not container:
         return []
 
-    paragraphs = []
+    output = []
 
-    for paragraph in container.find_all("p"):
+
+    for paragraph in container.find_all(
+        "p"
+    ):
 
         text = clean_text(
             paragraph.get_text(
@@ -311,82 +245,77 @@ def extract_paragraphs(container):
             )
         )
 
-        if len(text) < 35:
-            continue
 
-        paragraphs.append(text)
+        if len(text) >= 35:
 
-    return paragraphs
+            output.append(
+                text
+            )
+
+
+    return output
 
 
 def find_article_text(soup):
 
-    paragraphs = []
+    containers = [
 
-    article = soup.find(
-        "article"
+        soup.find(
+            "article"
+        ),
+
+        soup.find(
+            "main"
+        ),
+    ]
+
+
+    selectors = (
+
+        "[class*='article-content']",
+
+        "[class*='article-body']",
+
+        "[class*='story-content']",
+
+        "[class*='story-body']",
+
+        "[class*='entry-content']",
+
+        "[class*='post-content']",
     )
 
-    if article:
 
-        paragraphs = extract_paragraphs(
-            article
-        )
+    for selector in selectors:
 
-    if len(paragraphs) < 2:
-
-        main = soup.find(
-            "main"
-        )
-
-        if main:
-
-            paragraphs = extract_paragraphs(
-                main
-            )
-
-    if len(paragraphs) < 2:
-
-        selectors = (
-
-            "[class*='article-content']",
-
-            "[class*='article-body']",
-
-            "[class*='story-content']",
-
-            "[class*='story-body']",
-
-            "[class*='entry-content']",
-
-            "[class*='post-content']",
-        )
-
-        for selector in selectors:
-
-            container = soup.select_one(
+        containers.append(
+            soup.select_one(
                 selector
             )
+        )
 
-            if not container:
-                continue
 
-            found = extract_paragraphs(
+    for container in containers:
+
+        paragraphs = (
+            extract_paragraphs(
                 container
             )
+        )
 
-            if len(found) >= 2:
 
-                paragraphs = found
-                break
+        if len(paragraphs) >= 2:
 
-    return "\n\n".join(
-        paragraphs
-    )[:12000]
+            return "\n\n".join(
+                paragraphs
+            )[:12000]
+
+
+    return ""
 
 
 # ============================================================
-# IMAGE HELPERS
+# IMAGE URL HELPERS
 # ============================================================
 
 def make_absolute_url(
@@ -397,26 +326,36 @@ def make_absolute_url(
     if not image_url:
         return ""
 
+
     image_url = html.unescape(
         str(image_url).strip()
     )
 
+
     if image_url.startswith(
         "data:"
     ):
+
         return ""
+
 
     image_url = urllib.parse.urljoin(
         page_url,
         image_url,
     )
 
-    if not image_url.startswith(
-        ("http://", "https://")
-    ):
-        return ""
 
-    return image_url
+    if image_url.startswith(
+        (
+            "http://",
+            "https://",
+        )
+    ):
+
+        return image_url
+
+
+    return ""
 
 
 def looks_generic_image(
@@ -428,13 +367,10 @@ def looks_generic_image(
         f"{url} {alt}"
     ).lower()
 
+
     blocked = (
 
         "logo",
-
-        "site-logo",
-
-        "site_logo",
 
         "favicon",
 
@@ -444,25 +380,17 @@ def looks_generic_image(
 
         "default_image",
 
-        "defaultimage",
-
         "avatar",
-
-        "profile-photo",
-
-        "profile_image",
 
         "author-image",
 
-        "author_image",
+        "profile-photo",
 
         "headshot",
 
         "sprite",
 
         "social-icon",
-
-        "social_icon",
 
         "newsletter",
 
@@ -477,27 +405,31 @@ def looks_generic_image(
         "blank.gif",
     )
 
+
     if any(
-        word in text
-        for word in blocked
+        term in text
+        for term in blocked
     ):
 
         return True
 
-    size_match = re.search(
+
+    match = re.search(
         r"(\d{2,4})x(\d{2,4})",
         text,
     )
 
-    if size_match:
+
+    if match:
 
         width = int(
-            size_match.group(1)
+            match.group(1)
         )
 
         height = int(
-            size_match.group(2)
+            match.group(2)
         )
+
 
         if (
             width <= 250
@@ -505,6 +437,7 @@ def looks_generic_image(
         ):
 
             return True
+
 
     return False
 
@@ -517,37 +450,47 @@ def best_srcset_url(
     if not srcset:
         return ""
 
+
     choices = []
 
-    for item in srcset.split(","):
 
-        item = item.strip()
+    for part in srcset.split(","):
 
-        if not item:
+        bits = (
+            part.strip()
+            .split()
+        )
+
+
+        if not bits:
             continue
 
-        pieces = item.split()
-
-        url = pieces[0]
 
         score = 1
 
-        if len(pieces) > 1:
+
+        if len(bits) > 1:
 
             descriptor = (
-                pieces[1]
+                bits[1]
                 .lower()
             )
 
+
             try:
 
-                if descriptor.endswith("w"):
+                if descriptor.endswith(
+                    "w"
+                ):
 
                     score = int(
                         descriptor[:-1]
                     )
 
-                elif descriptor.endswith("x"):
+
+                elif descriptor.endswith(
+                    "x"
+                ):
 
                     score = (
                         float(
@@ -556,23 +499,28 @@ def best_srcset_url(
                         * 1000
                     )
 
+
             except ValueError:
 
                 pass
 
+
         choices.append(
             (
                 score,
-                url,
+                bits[0],
             )
         )
+
 
     if not choices:
         return ""
 
+
     choices.sort(
         reverse=True
     )
+
 
     return make_absolute_url(
         page_url,
@@ -586,10 +534,19 @@ def image_from_tag(
 ):
 
     alt = (
-        image.get("alt")
-        or image.get("title")
+        image.get(
+            "alt"
+        )
+
+        or
+
+        image.get(
+            "title"
+        )
+
         or ""
     )
+
 
     for attribute in (
 
@@ -610,6 +567,7 @@ def image_from_tag(
             page_url,
         )
 
+
         if (
             url
             and not looks_generic_image(
@@ -619,6 +577,7 @@ def image_from_tag(
         ):
 
             return url
+
 
     for attribute in (
 
@@ -643,6 +602,7 @@ def image_from_tag(
             ),
         )
 
+
         if (
             url
             and not looks_generic_image(
@@ -653,7 +613,177 @@ def image_from_tag(
 
             return url
 
+
     return ""
+
+
+# ============================================================
+# JSON-LD IMAGES
+# ============================================================
+
+def extract_image_values(value):
+
+    output = []
+
+
+    if isinstance(
+        value,
+        str,
+    ):
+
+        output.append(
+            value
+        )
+
+
+    elif isinstance(
+        value,
+        list,
+    ):
+
+        for item in value:
+
+            output.extend(
+                extract_image_values(
+                    item
+                )
+            )
+
+
+    elif isinstance(
+        value,
+        dict,
+    ):
+
+        for key in (
+
+            "url",
+
+            "contentUrl",
+
+            "@id",
+        ):
+
+            if value.get(key):
+
+                output.extend(
+
+                    extract_image_values(
+                        value[key]
+                    )
+                )
+
+
+    return output
+
+
+def extract_jsonld_article_images(
+    data,
+):
+
+    images = []
+
+
+    if isinstance(
+        data,
+        list,
+    ):
+
+        for item in data:
+
+            images.extend(
+
+                extract_jsonld_article_images(
+                    item
+                )
+            )
+
+
+        return images
+
+
+    if not isinstance(
+        data,
+        dict,
+    ):
+
+        return images
+
+
+    types = data.get(
+        "@type",
+        [],
+    )
+
+
+    if isinstance(
+        types,
+        str,
+    ):
+
+        types = [
+            types
+        ]
+
+
+    article_types = {
+
+        "Article",
+
+        "NewsArticle",
+
+        "ReportageNewsArticle",
+
+        "AnalysisNewsArticle",
+    }
+
+
+    if any(
+        item in article_types
+        for item in types
+    ):
+
+        images.extend(
+
+            extract_image_values(
+
+                data.get(
+                    "image"
+                )
+            )
+        )
+
+
+        images.extend(
+
+            extract_image_values(
+
+                data.get(
+                    "thumbnailUrl"
+                )
+            )
+        )
+
+
+    for value in data.values():
+
+        if isinstance(
+            value,
+            (
+                dict,
+                list,
+            ),
+        ):
+
+            images.extend(
+
+                extract_jsonld_article_images(
+                    value
+                )
+            )
+
+
+    return images
 
 
 # ============================================================
@@ -666,7 +796,9 @@ def find_feed_image(
 ):
 
     for key in (
+
         "media_content",
+
         "media_thumbnail",
     ):
 
@@ -685,6 +817,7 @@ def find_feed_image(
                 ),
             )
 
+
             if (
                 url
                 and not looks_generic_image(
@@ -702,8 +835,9 @@ def find_feed_image(
 
         if (
 
-            link.get("rel")
-            == "enclosure"
+            link.get(
+                "rel"
+            ) == "enclosure"
 
             and
 
@@ -712,7 +846,9 @@ def find_feed_image(
                     "type",
                     "",
                 )
-            ).startswith("image")
+            ).startswith(
+                "image"
+            )
         ):
 
             url = make_absolute_url(
@@ -724,6 +860,7 @@ def find_feed_image(
                     "",
                 ),
             )
+
 
             if (
                 url
@@ -742,20 +879,21 @@ def find_feed_image(
             "",
         )
 
-        +
+        or ""
+    )
 
-        "".join(
 
-            item.get(
-                "value",
-                "",
-            )
+    blob += "".join(
 
-            for item
-            in entry.get(
-                "content",
-                [],
-            )
+        item.get(
+            "value",
+            "",
+        )
+
+        for item
+        in entry.get(
+            "content",
+            [],
         )
     )
 
@@ -766,7 +904,7 @@ def find_feed_image(
 
         blob,
 
-        flags=re.IGNORECASE,
+        re.IGNORECASE,
     )
 
 
@@ -779,6 +917,7 @@ def find_feed_image(
             match.group(1),
         )
 
+
         if (
             url
             and not looks_generic_image(
@@ -788,139 +927,12 @@ def find_feed_image(
 
             return url
 
+
     return ""
 
 
 # ============================================================
-# JSON-LD IMAGES
-# ============================================================
-
-def extract_image_values(value):
-
-    output = []
-
-    if isinstance(value, str):
-
-        output.append(value)
-
-    elif isinstance(value, list):
-
-        for item in value:
-
-            output.extend(
-                extract_image_values(
-                    item
-                )
-            )
-
-    elif isinstance(value, dict):
-
-        for key in (
-
-            "url",
-
-            "contentUrl",
-
-            "@id",
-        ):
-
-            if value.get(key):
-
-                output.extend(
-                    extract_image_values(
-                        value[key]
-                    )
-                )
-
-    return output
-
-
-def extract_jsonld_article_images(
-    data,
-):
-
-    images = []
-
-    if isinstance(data, list):
-
-        for item in data:
-
-            images.extend(
-                extract_jsonld_article_images(
-                    item
-                )
-            )
-
-        return images
-
-    if not isinstance(
-        data,
-        dict,
-    ):
-
-        return images
-
-    types = data.get(
-        "@type",
-        [],
-    )
-
-    if isinstance(types, str):
-
-        types = [
-            types
-        ]
-
-    article_types = {
-
-        "Article",
-
-        "NewsArticle",
-
-        "ReportageNewsArticle",
-
-        "AnalysisNewsArticle",
-    }
-
-    if any(
-        item in article_types
-        for item in types
-    ):
-
-        images.extend(
-            extract_image_values(
-                data.get(
-                    "image"
-                )
-            )
-        )
-
-        images.extend(
-            extract_image_values(
-                data.get(
-                    "thumbnailUrl"
-                )
-            )
-        )
-
-    for value in data.values():
-
-        if isinstance(
-            value,
-            (dict, list),
-        ):
-
-            images.extend(
-                extract_jsonld_article_images(
-                    value
-                )
-            )
-
-    return images
-
-
-# ============================================================
-# FIND STORY IMAGE CANDIDATES
+# FIND ARTICLE IMAGE
 # ============================================================
 
 def find_article_image_candidates(
@@ -931,36 +943,32 @@ def find_article_image_candidates(
     candidates = []
 
 
-    def add_candidate(
+    def add(
         score,
         url,
         alt="",
     ):
-
-        if not url:
-            return
 
         url = make_absolute_url(
             article_url,
             url,
         )
 
-        if not url:
-            return
 
-        if looks_generic_image(
-            url,
-            alt,
+        if (
+            url
+            and not looks_generic_image(
+                url,
+                alt,
+            )
         ):
 
-            return
-
-        candidates.append(
-            (
-                score,
-                url,
+            candidates.append(
+                (
+                    score,
+                    url,
+                )
             )
-        )
 
 
     article = soup.find(
@@ -969,7 +977,7 @@ def find_article_image_candidates(
 
 
     # --------------------------------------------------------
-    # FIGURES / PICTURES
+    # ARTICLE FIGURES
     # --------------------------------------------------------
 
     if article:
@@ -982,6 +990,7 @@ def find_article_image_candidates(
             picture = figure.find(
                 "picture"
             )
+
 
             if picture:
 
@@ -1006,18 +1015,21 @@ def find_article_image_candidates(
                         article_url,
                     )
 
-                    add_candidate(
+
+                    add(
                         140,
                         url,
                     )
+
 
             image = figure.find(
                 "img"
             )
 
+
             if image:
 
-                add_candidate(
+                add(
 
                     135,
 
@@ -1034,7 +1046,7 @@ def find_article_image_candidates(
 
 
     # --------------------------------------------------------
-    # IMAGES INSIDE ARTICLE
+    # OTHER ARTICLE IMAGES
     # --------------------------------------------------------
 
     if article:
@@ -1044,59 +1056,9 @@ def find_article_image_candidates(
             limit=30,
         ):
 
-            add_candidate(
+            add(
 
                 125,
-
-                image_from_tag(
-                    image,
-                    article_url,
-                ),
-
-                image.get(
-                    "alt",
-                    "",
-                ),
-            )
-
-
-    # --------------------------------------------------------
-    # COMMON STORY BODY CONTAINERS
-    # --------------------------------------------------------
-
-    selectors = (
-
-        "[class*='article-content']",
-
-        "[class*='article-body']",
-
-        "[class*='story-content']",
-
-        "[class*='story-body']",
-
-        "[class*='entry-content']",
-
-        "[class*='post-content']",
-    )
-
-
-    for selector in selectors:
-
-        container = soup.select_one(
-            selector
-        )
-
-        if not container:
-            continue
-
-        for image in container.find_all(
-            "img",
-            limit=20,
-        ):
-
-            add_candidate(
-
-                120,
 
                 image_from_tag(
                     image,
@@ -1127,15 +1089,17 @@ def find_article_image_candidates(
 
         try:
 
-            raw = (
+            data = json.loads(
+
                 script.string
-                or script.get_text()
+
+                or
+
+                script.get_text()
+
                 or ""
             )
 
-            data = json.loads(
-                raw
-            )
 
             for image_url in (
                 extract_jsonld_article_images(
@@ -1143,14 +1107,15 @@ def find_article_image_candidates(
                 )
             ):
 
-                add_candidate(
+                add(
                     110,
                     image_url,
                 )
 
+
         except Exception:
 
-            continue
+            pass
 
 
     # --------------------------------------------------------
@@ -1167,15 +1132,6 @@ def find_article_image_candidates(
         },
     )
 
-    og_alt = soup.find(
-
-        "meta",
-
-        attrs={
-            "property":
-                "og:image:alt"
-        },
-    )
 
     if (
         og_image
@@ -1184,24 +1140,13 @@ def find_article_image_candidates(
         )
     ):
 
-        alt = (
-            og_alt.get(
-                "content",
-                "",
-            )
-            if og_alt
-            else ""
-        )
-
-        add_candidate(
+        add(
 
             100,
 
             og_image.get(
                 "content"
             ),
-
-            alt,
         )
 
 
@@ -1234,6 +1179,7 @@ def find_article_image_candidates(
         )
     )
 
+
     if (
         twitter_image
         and twitter_image.get(
@@ -1241,7 +1187,7 @@ def find_article_image_candidates(
         )
     ):
 
-        add_candidate(
+        add(
 
             90,
 
@@ -1267,18 +1213,20 @@ def find_article_image_candidates(
 
     for _, url in candidates:
 
-        normalised = (
-            url
-            .split("?")[0]
+        key = (
+            url.split("?")[0]
             .lower()
         )
 
-        if normalised in seen:
+
+        if key in seen:
             continue
 
+
         seen.add(
-            normalised
+            key
         )
+
 
         unique.append(
             url
@@ -1289,7 +1237,7 @@ def find_article_image_candidates(
 
 
 # ============================================================
-# DOWNLOAD AND NORMALISE IMAGE
+# DOWNLOAD IMAGE TO GITHUB
 # ============================================================
 
 def download_story_image(
@@ -1300,14 +1248,13 @@ def download_story_image(
 
     if not remote_url:
 
-        return (
-            "",
-            "",
-        )
+        return ""
+
 
     IMAGES_DIR.mkdir(
         exist_ok=True
     )
+
 
     try:
 
@@ -1323,6 +1270,7 @@ def download_story_image(
                 "image/*,"
                 "*/*;q=0.8",
         }
+
 
         if referer:
 
@@ -1349,15 +1297,7 @@ def download_story_image(
 
         if len(data) < 12_000:
 
-            print(
-                "Rejected tiny image:",
-                remote_url,
-            )
-
-            return (
-                "",
-                "",
-            )
+            return ""
 
 
         image = Image.open(
@@ -1385,42 +1325,23 @@ def download_story_image(
             or height < 200
         ):
 
-            print(
-                "Rejected small image:",
-                width,
-                height,
-                remote_url,
-            )
-
-            return (
-                "",
-                "",
-            )
+            return ""
 
 
-        ratio = width / height
+        ratio = (
+            width
+            / height
+        )
 
 
-        # Reject very tall/narrow graphics that are unlikely
-        # to be normal news photographs.
         if (
             ratio < 0.55
             or ratio > 4.5
         ):
 
-            print(
-                "Rejected unusual image ratio:",
-                ratio,
-                remote_url,
-            )
-
-            return (
-                "",
-                "",
-            )
+            return ""
 
 
-        # Limit size while retaining good quality.
         image.thumbnail(
             (
                 1600,
@@ -1436,14 +1357,16 @@ def download_story_image(
             )
 
 
-        filename = (
+        # IMPORTANT:
+        # Store a RELATIVE path in stories.json.
+        relative_path = (
+            f"images/"
             f"{story_id}.jpg"
         )
 
 
-        local_path = (
-            IMAGES_DIR
-            / filename
+        local_path = Path(
+            relative_path
         )
 
 
@@ -1459,57 +1382,29 @@ def download_story_image(
         )
 
 
-        if (
-            local_path.stat().st_size
-            > 5_000_000
-        ):
-
-            image.save(
-
-                local_path,
-
-                format="JPEG",
-
-                quality=72,
-
-                optimize=True,
-            )
-
-
-        public_url = (
-            f"{SITE_URL}/images/"
-            f"{filename}"
-        )
-
-
         print(
             "Saved story image:",
-            public_url,
+            relative_path,
         )
 
 
-        return (
-            public_url,
-            str(local_path),
-        )
+        return relative_path
 
 
     except Exception as error:
 
         print(
-            "Image failed:",
+            "Image download failed:",
             remote_url,
             error,
         )
 
-        return (
-            "",
-            "",
-        )
+
+        return ""
 
 
 # ============================================================
-# ARTICLE DATA
+# FETCH ARTICLE + PHOTO
 # ============================================================
 
 def fetch_article_data(
@@ -1536,12 +1431,15 @@ def fetch_article_data(
         )
 
 
-        article_text = find_article_text(
-            soup
+        article_text = (
+            find_article_text(
+                soup
+            )
         )
 
 
         candidates.extend(
+
             find_article_image_candidates(
                 article_url,
                 soup,
@@ -1549,7 +1447,6 @@ def fetch_article_data(
         )
 
 
-    # RSS image is fallback only.
     if (
         feed_image
         and not looks_generic_image(
@@ -1567,22 +1464,24 @@ def fetch_article_data(
 
     for candidate in candidates:
 
-        normalised = (
+        key = (
             candidate
             .split("?")[0]
             .lower()
         )
 
 
-        if normalised in seen:
+        if key in seen:
+
             continue
 
+
         seen.add(
-            normalised
+            key
         )
 
 
-        public_url, local_file = (
+        relative_path = (
             download_story_image(
 
                 candidate,
@@ -1594,20 +1493,16 @@ def fetch_article_data(
         )
 
 
-        if (
-            public_url
-            and local_file
-        ):
+        if relative_path:
 
             return (
                 article_text,
-                public_url,
-                local_file,
+                relative_path,
             )
 
 
     print(
-        "No suitable image found:",
+        "No suitable story image found:",
         article_url,
     )
 
@@ -1615,12 +1510,11 @@ def fetch_article_data(
     return (
         article_text,
         "",
-        "",
     )
 
 
 # ============================================================
-# DIVERSE STORY SELECTION
+# STORY SELECTION
 # ============================================================
 
 def choose_diverse_stories(
@@ -1635,25 +1529,65 @@ def choose_diverse_stories(
     used_ids = set()
 
 
-    # Nigeria first.
+    for wanted_region in (
+        "Nigeria",
+        "World",
+    ):
+
+        for story in candidates:
+
+            if (
+                story[
+                    "region"
+                ] != wanted_region
+            ):
+
+                continue
+
+
+            if (
+                story[
+                    "_source"
+                ] in used_publishers
+            ):
+
+                continue
+
+
+            selected.append(
+                story
+            )
+
+
+            used_publishers.add(
+                story[
+                    "_source"
+                ]
+            )
+
+
+            used_ids.add(
+                story[
+                    "id"
+                ]
+            )
+
+
+            if len(
+                selected
+            ) >= limit:
+
+                return selected
+
+
     for story in candidates:
 
         if (
-            story["region"]
-            != "Nigeria"
+            story[
+                "id"
+            ] in used_ids
         ):
-            continue
 
-
-        publisher = (
-            story["_source"]
-        )
-
-
-        if (
-            publisher
-            in used_publishers
-        ):
             continue
 
 
@@ -1662,84 +1596,9 @@ def choose_diverse_stories(
         )
 
 
-        used_publishers.add(
-            publisher
-        )
-
-
-        used_ids.add(
-            story["id"]
-        )
-
-
-        if len(selected) >= limit:
-
-            return selected
-
-
-    # Then world.
-    for story in candidates:
-
-        if (
-            story["region"]
-            != "World"
-        ):
-            continue
-
-
-        publisher = (
-            story["_source"]
-        )
-
-
-        if (
-            publisher
-            in used_publishers
-        ):
-            continue
-
-
-        selected.append(
-            story
-        )
-
-
-        used_publishers.add(
-            publisher
-        )
-
-
-        used_ids.add(
-            story["id"]
-        )
-
-
-        if len(selected) >= limit:
-
-            return selected
-
-
-    # Fill remaining places.
-    for story in candidates:
-
-        if (
-            story["id"]
-            in used_ids
-        ):
-            continue
-
-
-        selected.append(
-            story
-        )
-
-
-        used_ids.add(
-            story["id"]
-        )
-
-
-        if len(selected) >= limit:
+        if len(
+            selected
+        ) >= limit:
 
             break
 
@@ -1797,8 +1656,7 @@ Return ONLY valid JSON:
 SHORT:
 
 - Write two concise sentences.
-- Aim for approximately 160 characters.
-- State the main development clearly.
+- Aim for about 160 characters total.
 - Neutral and factual.
 - No hashtags.
 - No emojis.
@@ -1807,13 +1665,12 @@ SHORT:
 
 BODY:
 
-- Write a polished Policy Dossier news article.
+- Write a polished Policy Dossier article.
 - Normally 250 to 450 words when enough information exists.
 - Use 3 to 5 paragraphs.
 - Explain what happened.
-- Include the important facts.
-- Explain why it matters only when supported.
-- Add context only when supported by the supplied text.
+- Include important details.
+- Include context only when supported.
 - Rewrite completely in your own words.
 - Do not reproduce the original article.
 - Do not invent facts.
@@ -1822,12 +1679,10 @@ BODY:
 - Do not invent dates, people or organisations.
 - Do not use outside knowledge.
 - Do not identify the publisher.
-- Do not say "according to [publisher]".
 - Do not tell readers to visit another news website.
 - Do not say "read the full story".
 - Do not say "read more at".
 - If information is limited, write a shorter accurate article.
-- Do not mention AI.
 
 Headline:
 {title}
@@ -1850,7 +1705,8 @@ Source material:
     )
 
 
-    short = normalise_ai_text(
+    short = clean_text(
+
         result.get(
             "short",
             "",
@@ -1858,25 +1714,21 @@ Source material:
     )
 
 
-    body = normalise_ai_text(
+    body = str(
         result.get(
             "body",
             "",
         )
-    )
+    ).strip()
 
 
-    if not short:
-
-        raise ValueError(
-            "OpenAI returned no summary."
-        )
-
-
-    if not body:
+    if (
+        not short
+        or not body
+    ):
 
         raise ValueError(
-            "OpenAI returned no article."
+            "OpenAI returned incomplete output."
         )
 
 
@@ -1891,11 +1743,12 @@ Source material:
 
 
 # ============================================================
-# ARTICLE HTML TEMPLATE
+# STORY PAGE TEMPLATE
 # ============================================================
 
 PAGE = Template(
 """<!doctype html>
+
 <html lang="en">
 
 <head>
@@ -1904,10 +1757,12 @@ PAGE = Template(
 
 <meta
     name="viewport"
-    content="width=device-width, initial-scale=1"
+    content="width=device-width,initial-scale=1"
 >
 
-<title>$title · Policy Dossier</title>
+<title>
+$title · Policy Dossier
+</title>
 
 <meta
     name="description"
@@ -1968,8 +1823,8 @@ $twitterimg
 :root {
     --bg:#090909;
     --fg:#f4f4f4;
-    --mute:#8d8d8d;
-    --line:#282828;
+    --mute:#777;
+    --line:#ddd;
     --accent:#087a3b;
 }
 
@@ -1978,8 +1833,8 @@ $twitterimg
     :root {
         --bg:#f7f6f2;
         --fg:#0b0b0b;
-        --mute:#696969;
-        --line:#dedbd4;
+        --mute:#707070;
+        --line:#d9d6cf;
         --accent:#087a3b;
     }
 }
@@ -1993,7 +1848,6 @@ body {
     background:var(--bg);
     color:var(--fg);
     font:400 16px/1.55 Archivo,system-ui,sans-serif;
-    -webkit-font-smoothing:antialiased;
 }
 
 a {
@@ -2007,7 +1861,7 @@ a {
 
 .bar {
     max-width:1120px;
-    margin:0 auto;
+    margin:auto;
     padding:0 20px;
     height:68px;
     display:flex;
@@ -2017,8 +1871,8 @@ a {
 
 .brand {
     display:flex;
-    align-items:center;
     gap:10px;
+    align-items:center;
 }
 
 .brand b {
@@ -2036,13 +1890,12 @@ a {
 
 .back {
     font-size:14px;
-    font-weight:600;
     color:var(--mute);
 }
 
 article {
     max-width:760px;
-    margin:0 auto;
+    margin:auto;
     padding:52px 20px 90px;
 }
 
@@ -2077,7 +1930,6 @@ h1 {
     object-fit:cover;
     border-radius:11px;
     margin:0 0 34px;
-    background:var(--line);
 }
 
 .body p {
@@ -2095,7 +1947,6 @@ h1 {
 
 .source-line strong {
     color:var(--fg);
-    font-weight:700;
 }
 
 .follow {
@@ -2118,15 +1969,22 @@ h1 {
     class="brand"
     href="../index.html"
 >
+
 <b>PD</b>
-<span>Policy Dossier</span>
+
+<span>
+Policy Dossier
+</span>
+
 </a>
 
 <a
     class="back"
     href="../index.html"
 >
+
 ← All stories
+
 </a>
 
 </div>
@@ -2155,7 +2013,12 @@ $body
 </div>
 
 <p class="source-line">
-Source: <strong>$source</strong>
+
+Source:
+<strong>
+$source
+</strong>
+
 </p>
 
 <p class="follow">
@@ -2165,7 +2028,9 @@ Source: <strong>$source</strong>
     target="_blank"
     rel="noopener"
 >
+
 Follow Policy Dossier on X
+
 </a>
 
 </p>
@@ -2180,7 +2045,41 @@ Follow Policy Dossier on X
 
 
 # ============================================================
-# WRITE ARTICLE PAGES
+# WEBSITE IMAGE PATHS
+# ============================================================
+
+def absolute_image_url(
+    relative_path,
+):
+
+    if not relative_path:
+        return ""
+
+
+    return (
+        f"{SITE_URL}/"
+        f"{relative_path.lstrip('/')}"
+    )
+
+
+def article_image_src(
+    relative_path,
+):
+
+    if not relative_path:
+        return ""
+
+
+    # Article pages are /stories/xxx.html,
+    # therefore the local image is one folder up.
+    return (
+        f"../"
+        f"{relative_path.lstrip('/')}"
+    )
+
+
+# ============================================================
+# GENERATE STORY PAGES
 # ============================================================
 
 def write_pages(stories):
@@ -2201,25 +2100,15 @@ def write_pages(stories):
             )
 
 
-        image = story.get(
-            "image",
-            "",
+        article_url = (
+            f"{SITE_URL}/stories/"
+            f"{story['id']}.html"
         )
 
 
-        article_text = (
-
-            story.get(
-                "body"
-            )
-
-            or
-
-            story.get(
-                "summary"
-            )
-
-            or ""
+        image = story.get(
+            "image",
+            "",
         )
 
 
@@ -2230,8 +2119,20 @@ def write_pages(stories):
             for paragraph
 
             in re.split(
+
                 r"\n+",
-                article_text,
+
+                story.get(
+                    "body"
+                )
+
+                or
+
+                story.get(
+                    "summary"
+                )
+
+                or "",
             )
 
             if paragraph.strip()
@@ -2247,30 +2148,45 @@ def write_pages(stories):
         )
 
 
-        article_url = (
-            f"{SITE_URL}/stories/"
-            f"{story['id']}.html"
-        )
-
-
         if image:
 
-            escaped_image = escape(
-                image
+            # X receives the ABSOLUTE URL.
+            image_absolute = escape(
+                absolute_image_url(
+                    image
+                )
+            )
+
+
+            # The website itself uses the RELATIVE URL.
+            image_source = escape(
+                article_image_src(
+                    image
+                )
             )
 
 
             og_image = (
-                '<meta property="og:image" '
-                f'content="{escaped_image}">\n'
-                '<meta property="og:image:type" '
+
+                '<meta '
+                'property="og:image" '
+                f'content="{image_absolute}">\n'
+
+                '<meta '
+                'property="og:image:secure_url" '
+                f'content="{image_absolute}">\n'
+
+                '<meta '
+                'property="og:image:type" '
                 'content="image/jpeg">'
             )
 
 
             twitter_image = (
-                '<meta name="twitter:image" '
-                f'content="{escaped_image}">'
+
+                '<meta '
+                'name="twitter:image" '
+                f'content="{image_absolute}">'
             )
 
 
@@ -2280,11 +2196,15 @@ def write_pages(stories):
 
 
             hero = (
-                f'<img '
-                f'class="hero" '
-                f'src="{escaped_image}" '
+
+                '<img '
+                'class="hero" '
+
+                f'src="{image_source}" '
+
                 f'alt="{escape(story["title"])}" '
-                f'loading="eager">'
+
+                'loading="eager">'
             )
 
 
@@ -2302,11 +2222,16 @@ def write_pages(stories):
         page = PAGE.substitute(
 
             title=escape(
-                story["title"]
+                story[
+                    "title"
+                ]
             ),
 
             summary=escape(
-                story["summary"]
+                story.get(
+                    "summary",
+                    "",
+                )
             ),
 
             url=escape(
@@ -2315,20 +2240,9 @@ def write_pages(stories):
 
             ogimg=og_image,
 
-            twitterimg=twitter_image,
-
             card=card,
 
-            source=escape(
-                story.get(
-                    "_source",
-                    "",
-                )
-            ),
-
-            xurl=escape(
-                X_URL
-            ),
+            twitterimg=twitter_image,
 
             region=escape(
                 story.get(
@@ -2344,9 +2258,20 @@ def write_pages(stories):
                 )[:10]
             ),
 
+            hero=hero,
+
             body=body_html,
 
-            hero=hero,
+            source=escape(
+                story.get(
+                    "_source",
+                    "",
+                )
+            ),
+
+            xurl=escape(
+                X_URL
+            ),
         )
 
 
@@ -2363,21 +2288,92 @@ def write_pages(stories):
 
 
 # ============================================================
-# LOAD / SAVE
+# CLEAN OLD GENERATED FILES
+# ============================================================
+
+def clean_generated_files(
+    stories,
+):
+
+    valid_story_files = {
+
+        f"{story['id']}.html"
+
+        for story
+        in stories
+    }
+
+
+    valid_image_files = {
+
+        Path(
+            story[
+                "image"
+            ]
+        ).name
+
+        for story
+        in stories
+
+        if story.get(
+            "image"
+        )
+    }
+
+
+    STORY_PAGES_DIR.mkdir(
+        exist_ok=True
+    )
+
+
+    IMAGES_DIR.mkdir(
+        exist_ok=True
+    )
+
+
+    for path in STORY_PAGES_DIR.glob(
+        "*.html"
+    ):
+
+        if (
+            path.name
+            not in valid_story_files
+        ):
+
+            path.unlink(
+                missing_ok=True
+            )
+
+
+    for path in IMAGES_DIR.iterdir():
+
+        if (
+            path.is_file()
+            and path.name
+            not in valid_image_files
+        ):
+
+            path.unlink(
+                missing_ok=True
+            )
+
+
+# ============================================================
+# LOAD / SAVE STORIES
 # ============================================================
 
 def load_stories():
 
     try:
 
-        with open(
-            STORIES_FILE,
-            encoding="utf-8",
-        ) as file:
+        stories = json.loads(
 
-            stories = json.load(
-                file
+            Path(
+                STORIES_FILE
+            ).read_text(
+                encoding="utf-8"
             )
+        )
 
 
         if not isinstance(
@@ -2391,7 +2387,6 @@ def load_stories():
         for story in stories:
 
 
-            # Migration from old "source" field.
             if (
 
                 "source"
@@ -2417,20 +2412,14 @@ def load_stories():
 
 
             story.setdefault(
-                "x_posted",
-                True,
-            )
-
-
-            story.setdefault(
                 "image",
                 "",
             )
 
 
             story.setdefault(
-                "image_file",
-                "",
+                "x_posted",
+                True,
             )
 
 
@@ -2447,29 +2436,25 @@ def load_stories():
 
 def save_stories(stories):
 
-    with open(
-        STORIES_FILE,
-        "w",
-        encoding="utf-8",
-    ) as file:
+    Path(
+        STORIES_FILE
+    ).write_text(
 
-        json.dump(
-
+        json.dumps(
             stories,
-
-            file,
-
             indent=2,
-
             ensure_ascii=False,
-        )
+        ),
+
+        encoding="utf-8",
+    )
 
 
 # ============================================================
-# X AUTHENTICATION
+# X
 # ============================================================
 
-def create_x_clients():
+def create_x_client():
 
     required = (
 
@@ -2499,20 +2484,16 @@ def create_x_clients():
     if missing:
 
         print(
-            "X disabled. Missing:",
+            "X posting disabled. Missing:",
             ", ".join(
                 missing
             ),
         )
 
-        return (
-            None,
-            None,
-        )
+        return None
 
 
-    # v2 client — create post.
-    x_client = tweepy.Client(
+    return tweepy.Client(
 
         consumer_key=os.environ[
             "X_API_KEY"
@@ -2531,42 +2512,6 @@ def create_x_clients():
         ],
     )
 
-
-    # v1.1 API — upload media.
-    auth = tweepy.OAuth1UserHandler(
-
-        os.environ[
-            "X_API_KEY"
-        ],
-
-        os.environ[
-            "X_API_SECRET"
-        ],
-
-        os.environ[
-            "X_ACCESS_TOKEN"
-        ],
-
-        os.environ[
-            "X_ACCESS_SECRET"
-        ],
-    )
-
-
-    media_api = tweepy.API(
-        auth
-    )
-
-
-    return (
-        x_client,
-        media_api,
-    )
-
-
-# ============================================================
-# X POST
-# ============================================================
 
 def build_x_post(story):
 
@@ -2595,7 +2540,8 @@ def build_x_post(story):
     if len(title) > 82:
 
         title = (
-            title[:79].rstrip()
+            title[:79]
+            .rstrip()
             + "..."
         )
 
@@ -2603,89 +2549,28 @@ def build_x_post(story):
     if len(summary) > 92:
 
         summary = (
-            summary[:89].rstrip()
+            summary[:89]
+            .rstrip()
             + "..."
         )
 
 
     return (
+
         f"{title}\n\n"
+
         f"{summary}\n\n"
+
         f"{article_url}"
     )
-
-
-def upload_story_image_to_x(
-    media_api,
-    story,
-):
-
-    image_file = story.get(
-        "image_file",
-        "",
-    )
-
-
-    if not image_file:
-
-        return None
-
-
-    path = Path(
-        image_file
-    )
-
-
-    if not path.exists():
-
-        print(
-            "X image file missing:",
-            image_file,
-        )
-
-        return None
-
-
-    try:
-
-        media = media_api.media_upload(
-            filename=str(
-                path
-            )
-        )
-
-
-        print(
-            "Uploaded image to X:",
-            image_file,
-        )
-
-
-        return (
-            media.media_id_string
-        )
-
-
-    except Exception as error:
-
-        print(
-            "X media upload failed:",
-            error,
-        )
-
-        return None
 
 
 def post_previous_story_to_x(
     existing_stories,
     x_client,
-    media_api,
 ):
 
-    if (
-        x_client is None
-        or media_api is None
-    ):
+    if x_client is None:
 
         return
 
@@ -2713,7 +2598,6 @@ def post_previous_story_to_x(
         return
 
 
-    # Oldest queued story first.
     pending.sort(
 
         key=lambda story:
@@ -2727,40 +2611,16 @@ def post_previous_story_to_x(
     story = pending[0]
 
 
-    tweet_text = (
-        build_x_post(
-            story
-        )
-    )
-
-
     try:
 
-        media_id = (
-            upload_story_image_to_x(
-                media_api,
-                story,
+        # Only the Policy Dossier URL is posted.
+        # X should read og:image/twitter:image from that page.
+        x_client.create_tweet(
+
+            text=build_x_post(
+                story
             )
         )
-
-
-        if media_id:
-
-            x_client.create_tweet(
-
-                text=tweet_text,
-
-                media_ids=[
-                    media_id
-                ],
-            )
-
-
-        else:
-
-            x_client.create_tweet(
-                text=tweet_text
-            )
 
 
         story[
@@ -2769,7 +2629,7 @@ def post_previous_story_to_x(
 
 
         print(
-            "Posted to X:",
+            "Posted link to X:",
             story[
                 "title"
             ],
@@ -2796,11 +2656,11 @@ def main():
 
 
     # --------------------------------------------------------
-    # POST ONE PREVIOUSLY DEPLOYED STORY TO X
+    # POST ONE STORY CREATED ON THE PREVIOUS RUN
     # --------------------------------------------------------
 
-    x_client, media_api = (
-        create_x_clients()
+    x_client = (
+        create_x_client()
     )
 
 
@@ -2809,8 +2669,6 @@ def main():
         existing_stories,
 
         x_client,
-
-        media_api,
     )
 
 
@@ -2820,7 +2678,9 @@ def main():
 
     existing_ids = {
 
-        story["id"]
+        story[
+            "id"
+        ]
 
         for story
         in existing_stories
@@ -2842,7 +2702,7 @@ def main():
 
 
     # --------------------------------------------------------
-    # RSS
+    # FETCH RSS
     # --------------------------------------------------------
 
     for publisher, (
@@ -2851,22 +2711,9 @@ def main():
     ) in FEEDS.items():
 
 
-        try:
-
-            feed = feedparser.parse(
-                feed_url
-            )
-
-
-        except Exception as error:
-
-            print(
-                "Feed failed:",
-                publisher,
-                error,
-            )
-
-            continue
+        feed = feedparser.parse(
+            feed_url
+        )
 
 
         for entry in (
@@ -2904,12 +2751,18 @@ def main():
             ).hexdigest()[:16]
 
 
-            if story_id in existing_ids:
+            if (
+                story_id
+                in existing_ids
+            ):
 
                 continue
 
 
-            if story_id in candidate_ids:
+            if (
+                story_id
+                in candidate_ids
+            ):
 
                 continue
 
@@ -2939,15 +2792,13 @@ def main():
 
             if published_struct:
 
-                timestamp = calendar.timegm(
-                    published_struct
-                )
-
-
                 published = (
+
                     dt.datetime.fromtimestamp(
 
-                        timestamp,
+                        calendar.timegm(
+                            published_struct
+                        ),
 
                         tz=dt.timezone.utc,
                     )
@@ -2984,14 +2835,6 @@ def main():
             )
 
 
-            feed_image = (
-                find_feed_image(
-                    entry,
-                    link,
-                )
-            )
-
-
             candidates.append(
                 {
 
@@ -3014,7 +2857,10 @@ def main():
                         rss_text,
 
                     "feed_image":
-                        feed_image,
+                        find_feed_image(
+                            entry,
+                            link,
+                        ),
 
                     "published": (
                         published
@@ -3060,15 +2906,8 @@ def main():
     )
 
 
-    print(
-        "Selected",
-        len(selected),
-        "new stories."
-    )
-
-
     # --------------------------------------------------------
-    # FETCH FULL ARTICLE + IMAGE
+    # FETCH ARTICLE + IMAGE
     # --------------------------------------------------------
 
     for story in selected:
@@ -3076,8 +2915,7 @@ def main():
 
         (
             article_text,
-            image_url,
-            image_file,
+            image_path,
         ) = fetch_article_data(
 
             story[
@@ -3102,12 +2940,7 @@ def main():
 
         story[
             "image"
-        ] = image_url
-
-
-        story[
-            "image_file"
-        ] = image_file
+        ] = image_path
 
 
     # --------------------------------------------------------
@@ -3115,6 +2948,7 @@ def main():
     # --------------------------------------------------------
 
     ai = OpenAI()
+
 
     processed = []
 
@@ -3161,17 +2995,17 @@ def main():
             "summary"
         ] = result[
             "short"
-        ].strip()
+        ]
 
 
         story[
             "body"
         ] = result[
             "body"
-        ].strip()
+        ]
 
 
-        # Website-only unless explicitly queued below.
+        # Website only by default.
         story[
             "x_posted"
         ] = True
@@ -3200,7 +3034,8 @@ def main():
         )
 
 
-    # Queue ONE new story for X next run.
+    # Exactly one fresh story is queued for X.
+    # It will be posted on the NEXT run after Pages deploys.
     if processed:
 
         processed[0][
@@ -3219,7 +3054,14 @@ def main():
     )[:KEEP]
 
 
+    # Generate HTML.
     write_pages(
+        stories
+    )
+
+
+    # Automatically remove old HTML/images that are no longer used.
+    clean_generated_files(
         stories
     )
 
@@ -3230,9 +3072,12 @@ def main():
 
 
     print(
-        "Completed.",
-        len(processed),
-        "new website stories published."
+
+        f"Completed. "
+
+        f"{len(processed)} new "
+
+        f"website stories published."
     )
 
 
