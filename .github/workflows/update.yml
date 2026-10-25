@@ -41,7 +41,6 @@ jobs:
 
       - name: Update Policy Dossier
         run: python policy_dossier.py
-
         env:
 
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
