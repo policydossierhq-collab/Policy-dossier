@@ -1,3 +1,4 @@
 feedparser
-tweepy
 openai
+tweepy
+beautifulsoup4
