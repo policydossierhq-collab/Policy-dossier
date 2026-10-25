@@ -1,9 +1,20 @@
-"""Policy Dossier
+"""
+Policy Dossier
 
-Fetch news -> GPT write-up -> save stories.json ->
-generate individual story pages -> post short updates to X.
+Workflow:
+1. Fetch latest news from RSS feeds.
+2. Prioritise Nigeria.
+3. Select stories from different publishers.
+4. Open each original article.
+5. Extract the article text and actual story photograph.
+6. Use GPT to create:
+   - a short teaser for X/homepage
+   - a neutral website article
+7. Generate individual article pages.
+8. Save stories.json.
+9. Post short updates to X.
 
-Designed to run from GitHub Actions.
+Designed to run with GitHub Actions.
 """
 
 import calendar
@@ -13,10 +24,14 @@ import html
 import json
 import os
 import re
+import urllib.parse
+import urllib.request
+from collections import Counter
 from string import Template
 
 import feedparser
 import tweepy
+from bs4 import BeautifulSoup
 from openai import OpenAI
 
 
@@ -24,7 +39,6 @@ from openai import OpenAI
 # CONFIGURATION
 # ============================================================
 
-# Source name: (RSS feed URL, region)
 FEEDS = {
     "Channels TV": (
         "https://www.channelstv.com/feed/",
@@ -60,10 +74,11 @@ FEEDS = {
     ),
 }
 
-# Maximum number of new stories written / posted each run
+
+# Maximum new stories published per run.
 MAX_NEW_PER_RUN = 4
 
-# Maximum number of stories retained
+# Maximum stories retained in stories.json.
 KEEP = 200
 
 FILE = "stories.json"
@@ -78,7 +93,6 @@ X_URL = (
     or "https://x.com/YOUR_HANDLE"
 )
 
-# Cheap model suitable for repeated short news-writing tasks.
 MODEL = (
     os.environ.get("OPENAI_MODEL")
     or "gpt-6-luna"
@@ -86,27 +100,43 @@ MODEL = (
 
 
 # ============================================================
-# TEXT HELPERS
+# GENERAL TEXT HELPERS
 # ============================================================
 
 def clean_text(value):
-    """Remove HTML and excessive whitespace from feed text."""
+    """Convert HTML/feed content into clean plain text."""
+
     if not value:
         return ""
 
     value = html.unescape(str(value))
-    value = re.sub(r"<[^>]+>", " ", value)
-    value = re.sub(r"\s+", " ", value)
+
+    value = re.sub(
+        r"<[^>]+>",
+        " ",
+        value,
+    )
+
+    value = re.sub(
+        r"\s+",
+        " ",
+        value,
+    )
 
     return value.strip()
 
 
-def normalise_text(value):
+def normalise_ai_text(value):
     """
-    Safely convert GPT output into plain text.
+    Convert GPT output safely into normal text.
 
-    Handles strings, lists, dictionaries and other values.
+    Handles:
+    - strings
+    - lists
+    - dictionaries
+    - other simple values
     """
+
     if value is None:
         return ""
 
@@ -114,111 +144,994 @@ def normalise_text(value):
         return value.strip()
 
     if isinstance(value, dict):
+
+        pieces = []
+
+        for item in value.values():
+
+            text = normalise_ai_text(
+                item
+            )
+
+            if text:
+                pieces.append(text)
+
         return "\n\n".join(
-            normalise_text(v)
-            for v in value.values()
-            if normalise_text(v)
+            pieces
         ).strip()
 
     if isinstance(value, list):
+
+        pieces = []
+
+        for item in value:
+
+            text = normalise_ai_text(
+                item
+            )
+
+            if text:
+                pieces.append(text)
+
         return "\n\n".join(
-            normalise_text(v)
-            for v in value
-            if normalise_text(v)
+            pieces
         ).strip()
 
     return str(value).strip()
 
 
-def parse_json_response(text):
-    """
-    Parse JSON returned by GPT.
+def parse_ai_json(text):
+    """Safely parse JSON returned by GPT."""
 
-    Also handles accidental markdown code fences.
-    """
-    text = (text or "").strip()
+    text = (
+        text
+        or ""
+    ).strip()
 
+    # Remove accidental markdown fences.
     if text.startswith("```"):
+
         text = re.sub(
             r"^```(?:json)?\s*",
             "",
             text,
             flags=re.IGNORECASE,
         )
-        text = re.sub(r"\s*```$", "", text)
+
+        text = re.sub(
+            r"\s*```$",
+            "",
+            text,
+        )
 
     try:
+
         return json.loads(text)
 
     except json.JSONDecodeError:
-        # Fallback: find the first JSON-looking object.
-        match = re.search(r"\{.*\}", text, re.DOTALL)
+
+        match = re.search(
+            r"\{.*\}",
+            text,
+            re.DOTALL,
+        )
 
         if not match:
+
             raise ValueError(
                 "GPT did not return valid JSON."
             )
 
-        return json.loads(match.group(0))
-
-
-# ============================================================
-# IMAGE EXTRACTION
-# ============================================================
-
-def find_image(entry):
-    """
-    Find the main image supplied in the RSS feed.
-
-    Images are hotlinked. They are not copied to GitHub.
-    """
-
-    for key in ("media_content", "media_thumbnail"):
-        for media in entry.get(key) or []:
-            url = str(media.get("url", ""))
-
-            if url.startswith("http"):
-                return url
-
-    for link in entry.get("links", []):
-        if (
-            link.get("rel") == "enclosure"
-            and str(link.get("type", "")).startswith("image")
-        ):
-            url = str(link.get("href", ""))
-
-            if url.startswith("http"):
-                return url
-
-    blob = (
-        entry.get("summary", "")
-        + "".join(
-            content.get("value", "")
-            for content in entry.get("content", [])
+        return json.loads(
+            match.group(0)
         )
+
+
+# ============================================================
+# WEBPAGE FETCHING
+# ============================================================
+
+def fetch_page(url):
+    """Download a source article page."""
+
+    try:
+
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 "
+                    "(compatible; PolicyDossierBot/1.0)"
+                )
+            },
+        )
+
+        with urllib.request.urlopen(
+            request,
+            timeout=12,
+        ) as response:
+
+            return response.read(
+                800000
+            ).decode(
+                "utf-8",
+                "ignore",
+            )
+
+    except Exception as error:
+
+        print(
+            f"Could not fetch article "
+            f"{url}: {error}"
+        )
+
+        return ""
+
+
+# ============================================================
+# ARTICLE IMAGE EXTRACTION
+# ============================================================
+
+def looks_like_generic_image(url, alt=""):
+    """
+    Reject obvious logos, branding, placeholders,
+    favicons and other non-news images.
+    """
+
+    text = (
+        f"{url} {alt}"
+    ).lower()
+
+    blocked_terms = (
+        "logo",
+        "site-logo",
+        "site_logo",
+        "brand-logo",
+        "brand_logo",
+        "favicon",
+        "placeholder",
+        "default-image",
+        "default_image",
+        "defaultimage",
+        "avatar",
+        "sprite",
+        "icon",
+        "loading.gif",
+        "blank.gif",
+        "ads/",
+        "/advert",
+        "advertisement",
+        "newsletter",
+        "social-icon",
+        "social_icon",
     )
 
-    match = re.search(
-        r'<img[^>]+src=["\']([^"\']+)',
-        blob,
-        re.IGNORECASE,
+    return any(
+        term in text
+        for term in blocked_terms
     )
 
-    if match:
-        url = match.group(1)
 
-        if url.startswith("http"):
-            return url
+def make_absolute_url(
+    page_url,
+    image_url,
+):
+    """Convert relative image URL to absolute URL."""
+
+    if not image_url:
+        return ""
+
+    image_url = html.unescape(
+        str(image_url).strip()
+    )
+
+    if image_url.startswith(
+        "data:"
+    ):
+        return ""
+
+    image_url = urllib.parse.urljoin(
+        page_url,
+        image_url,
+    )
+
+    if not image_url.startswith(
+        ("http://", "https://")
+    ):
+        return ""
+
+    return image_url
+
+
+def extract_image_values(value):
+    """
+    Extract possible image URLs from JSON-LD image values.
+    """
+
+    results = []
+
+    if isinstance(value, str):
+
+        results.append(value)
+
+    elif isinstance(value, list):
+
+        for item in value:
+
+            results.extend(
+                extract_image_values(
+                    item
+                )
+            )
+
+    elif isinstance(value, dict):
+
+        for key in (
+            "url",
+            "contentUrl",
+            "@id",
+        ):
+
+            if value.get(key):
+
+                results.extend(
+                    extract_image_values(
+                        value[key]
+                    )
+                )
+
+    return results
+
+
+def extract_jsonld_article_images(
+    data,
+):
+    """
+    Look specifically for images attached to Article /
+    NewsArticle structured data.
+    """
+
+    images = []
+
+    if isinstance(data, list):
+
+        for item in data:
+
+            images.extend(
+                extract_jsonld_article_images(
+                    item
+                )
+            )
+
+        return images
+
+    if not isinstance(
+        data,
+        dict,
+    ):
+        return images
+
+    article_types = {
+        "Article",
+        "NewsArticle",
+        "ReportageNewsArticle",
+        "AnalysisNewsArticle",
+    }
+
+    types = data.get(
+        "@type",
+        [],
+    )
+
+    if isinstance(types, str):
+        types = [types]
+
+    if any(
+        item in article_types
+        for item in types
+    ):
+
+        images.extend(
+            extract_image_values(
+                data.get(
+                    "image"
+                )
+            )
+        )
+
+        images.extend(
+            extract_image_values(
+                data.get(
+                    "thumbnailUrl"
+                )
+            )
+        )
+
+    # JSON-LD commonly contains @graph.
+    for value in data.values():
+
+        if isinstance(
+            value,
+            (dict, list),
+        ):
+
+            images.extend(
+                extract_jsonld_article_images(
+                    value
+                )
+            )
+
+    return images
+
+
+def find_actual_article_image(
+    page_url,
+    soup,
+):
+    """
+    Find the actual photograph associated with a story.
+
+    Priority:
+    1. NewsArticle JSON-LD image
+    2. Open Graph article image
+    3. Twitter article image
+    4. Image within <article>
+    5. Image within <main>
+
+    It NEVER takes a screenshot of the webpage.
+    """
+
+    candidates = []
+
+
+    # --------------------------------------------------------
+    # 1. STRUCTURED ARTICLE DATA
+    # --------------------------------------------------------
+
+    for script in soup.find_all(
+        "script",
+        type=lambda value: (
+            value
+            and "ld+json" in value
+        ),
+    ):
+
+        try:
+
+            raw = (
+                script.string
+                or script.get_text()
+                or ""
+            )
+
+            data = json.loads(raw)
+
+            candidates.extend(
+                (
+                    image,
+                    "",
+                )
+                for image
+                in extract_jsonld_article_images(
+                    data
+                )
+            )
+
+        except Exception:
+            continue
+
+
+    # --------------------------------------------------------
+    # 2. OPEN GRAPH IMAGE
+    # --------------------------------------------------------
+
+    og_image = soup.find(
+        "meta",
+        attrs={
+            "property": "og:image"
+        },
+    )
+
+    if (
+        og_image
+        and og_image.get(
+            "content"
+        )
+    ):
+
+        candidates.append(
+            (
+                og_image[
+                    "content"
+                ],
+                "",
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # 3. TWITTER IMAGE
+    # --------------------------------------------------------
+
+    twitter_image = soup.find(
+        "meta",
+        attrs={
+            "name": "twitter:image"
+        },
+    )
+
+    if (
+        twitter_image
+        and twitter_image.get(
+            "content"
+        )
+    ):
+
+        candidates.append(
+            (
+                twitter_image[
+                    "content"
+                ],
+                "",
+            )
+        )
+
+
+    # --------------------------------------------------------
+    # 4. IMAGE INSIDE ARTICLE
+    # --------------------------------------------------------
+
+    article = soup.find(
+        "article"
+    )
+
+    if article:
+
+        for image in article.find_all(
+            "img",
+            limit=10,
+        ):
+
+            url = (
+                image.get(
+                    "src"
+                )
+                or image.get(
+                    "data-src"
+                )
+                or image.get(
+                    "data-lazy-src"
+                )
+                or ""
+            )
+
+            candidates.append(
+                (
+                    url,
+                    image.get(
+                        "alt",
+                        "",
+                    ),
+                )
+            )
+
+
+    # --------------------------------------------------------
+    # 5. IMAGE INSIDE MAIN
+    # --------------------------------------------------------
+
+    main = soup.find(
+        "main"
+    )
+
+    if main:
+
+        for image in main.find_all(
+            "img",
+            limit=10,
+        ):
+
+            url = (
+                image.get(
+                    "src"
+                )
+                or image.get(
+                    "data-src"
+                )
+                or image.get(
+                    "data-lazy-src"
+                )
+                or ""
+            )
+
+            candidates.append(
+                (
+                    url,
+                    image.get(
+                        "alt",
+                        "",
+                    ),
+                )
+            )
+
+
+    # --------------------------------------------------------
+    # PICK FIRST PLAUSIBLE NEWS PHOTO
+    # --------------------------------------------------------
+
+    for image_url, alt in candidates:
+
+        image_url = make_absolute_url(
+            page_url,
+            image_url,
+        )
+
+        if not image_url:
+            continue
+
+        if looks_like_generic_image(
+            image_url,
+            alt,
+        ):
+            continue
+
+        return image_url
 
     return ""
 
 
 # ============================================================
-# ARTICLE PAGE TEMPLATE
+# ARTICLE TEXT EXTRACTION
+# ============================================================
+
+def extract_paragraphs(
+    container,
+):
+    """Extract meaningful paragraphs from an article container."""
+
+    if not container:
+        return []
+
+    paragraphs = []
+
+    for paragraph in container.find_all(
+        "p"
+    ):
+
+        text = clean_text(
+            paragraph.get_text(
+                " ",
+                strip=True,
+            )
+        )
+
+        # Ignore tiny labels/navigation text.
+        if len(text) < 35:
+            continue
+
+        paragraphs.append(text)
+
+    return paragraphs
+
+
+def find_article_text(
+    soup,
+):
+    """
+    Extract the actual article text where possible.
+
+    It does not store or reproduce the original article.
+    The text is only sent to GPT so it can write a
+    summarised Policy Dossier version.
+    """
+
+    # First preference: semantic article element.
+    article = soup.find(
+        "article"
+    )
+
+    paragraphs = extract_paragraphs(
+        article
+    )
+
+    # Fallback: main content area.
+    if len(paragraphs) < 2:
+
+        main = soup.find(
+            "main"
+        )
+
+        paragraphs = extract_paragraphs(
+            main
+        )
+
+    # Avoid excessive API input.
+    text = "\n\n".join(
+        paragraphs
+    )
+
+    return text[:10000]
+
+
+def fetch_article_data(url):
+    """
+    Fetch original article and return:
+    - article text
+    - actual article image
+    """
+
+    page = fetch_page(url)
+
+    if not page:
+        return "", ""
+
+    soup = BeautifulSoup(
+        page,
+        "html.parser",
+    )
+
+    article_text = find_article_text(
+        soup
+    )
+
+    article_image = (
+        find_actual_article_image(
+            url,
+            soup,
+        )
+    )
+
+    return (
+        article_text,
+        article_image,
+    )
+
+
+# ============================================================
+# REMOVE REPEATED / GENERIC IMAGES
+# ============================================================
+
+def normalised_image_url(url):
+    """
+    Normalise image URL to detect the same publisher image
+    being reused across several stories.
+    """
+
+    if not url:
+        return ""
+
+    parsed = urllib.parse.urlsplit(
+        url
+    )
+
+    return (
+        f"{parsed.scheme}://"
+        f"{parsed.netloc}"
+        f"{parsed.path}"
+    ).lower()
+
+
+def remove_duplicate_images(
+    stories,
+):
+    """
+    If several different stories return the exact same image,
+    assume it may be a generic publisher image.
+
+    Remove it from ALL those stories rather than displaying
+    the repeated publisher logo.
+    """
+
+    values = [
+        normalised_image_url(
+            story.get(
+                "image",
+                "",
+            )
+        )
+        for story in stories
+    ]
+
+    counts = Counter(
+        value
+        for value in values
+        if value
+    )
+
+    repeated = {
+        value
+        for value, count
+        in counts.items()
+        if count > 1
+    }
+
+    for story in stories:
+
+        value = normalised_image_url(
+            story.get(
+                "image",
+                "",
+            )
+        )
+
+        if value in repeated:
+
+            print(
+                "Removed repeated image "
+                f"for {story['title']}"
+            )
+
+            story["image"] = ""
+
+
+# ============================================================
+# SOURCE DIVERSITY
+# ============================================================
+
+def choose_diverse_stories(
+    candidates,
+    limit,
+):
+    """
+    Choose one story from each publisher first.
+
+    Nigeria is prioritised.
+
+    Example:
+    Punch
+    Channels TV
+    Premium Times
+    Nairametrics
+
+    rather than:
+    Punch
+    Punch
+    Punch
+    Punch
+    """
+
+    selected = []
+
+    selected_ids = set()
+
+    used_sources = set()
+
+
+    # --------------------------------------------------------
+    # FIRST: UNIQUE NIGERIAN SOURCES
+    # --------------------------------------------------------
+
+    for story in candidates:
+
+        if story[
+            "region"
+        ] != "Nigeria":
+            continue
+
+        if story[
+            "source"
+        ] in used_sources:
+            continue
+
+        selected.append(
+            story
+        )
+
+        selected_ids.add(
+            story["id"]
+        )
+
+        used_sources.add(
+            story["source"]
+        )
+
+        if len(
+            selected
+        ) >= limit:
+
+            return selected
+
+
+    # --------------------------------------------------------
+    # SECOND: UNIQUE WORLD SOURCES
+    # --------------------------------------------------------
+
+    for story in candidates:
+
+        if story[
+            "region"
+        ] != "World":
+            continue
+
+        if story[
+            "source"
+        ] in used_sources:
+            continue
+
+        selected.append(
+            story
+        )
+
+        selected_ids.add(
+            story["id"]
+        )
+
+        used_sources.add(
+            story["source"]
+        )
+
+        if len(
+            selected
+        ) >= limit:
+
+            return selected
+
+
+    # --------------------------------------------------------
+    # THIRD: FILL ANY EMPTY SPACES
+    # --------------------------------------------------------
+
+    for story in candidates:
+
+        if story[
+            "id"
+        ] in selected_ids:
+            continue
+
+        selected.append(
+            story
+        )
+
+        selected_ids.add(
+            story["id"]
+        )
+
+        if len(
+            selected
+        ) >= limit:
+            break
+
+    return selected
+
+
+# ============================================================
+# GPT ARTICLE WRITING
+# ============================================================
+
+def write_up(
+    client,
+    title,
+    source,
+    article_text,
+    rss_text,
+):
+    """
+    GPT creates TWO outputs:
+
+    short:
+        short homepage/X teaser
+
+    body:
+        proper Policy Dossier website article
+    """
+
+    source_material = (
+        article_text
+        if len(
+            article_text
+        ) >= 200
+        else clean_text(
+            rss_text
+        )
+    )
+
+    if not source_material:
+
+        raise ValueError(
+            "No usable source text."
+        )
+
+    prompt = f"""
+You are writing for Policy Dossier, a neutral news and
+public-affairs publication.
+
+Create TWO different outputs from the source material.
+
+Return ONLY valid JSON using exactly this structure:
+
+{{
+  "short": "Short teaser here",
+  "body": "Website article here"
+}}
+
+SHORT:
+
+- Write 2 concise sentences.
+- Maximum approximately 160 characters.
+- This is for the homepage and X.
+- State the main development clearly.
+- No hashtags.
+- No emojis.
+- No clickbait.
+
+BODY:
+
+- Write a neutral Policy Dossier article.
+- Usually 250 to 450 words when enough information exists.
+- Use 3 to 5 paragraphs.
+- Explain:
+  1. what happened;
+  2. the important details;
+  3. why the development matters;
+  4. relevant context supported by the source.
+- Write completely in your own words.
+- Do not reproduce the source article.
+- Do not invent facts.
+- Do not invent quotations.
+- Do not invent numbers, dates, people or organisations.
+- Do not add outside information.
+- If the source does not provide enough information for
+  250 words, write a shorter accurate article instead.
+- Do not mention AI.
+- Do not mention these instructions.
+
+Original publication:
+{source}
+
+Original headline:
+{title}
+
+Source material:
+{source_material[:10000]}
+""".strip()
+
+    response = client.responses.create(
+        model=MODEL,
+        input=prompt,
+    )
+
+    result = parse_ai_json(
+        response.output_text
+    )
+
+    short = normalise_ai_text(
+        result.get(
+            "short",
+            "",
+        )
+    )
+
+    body = normalise_ai_text(
+        result.get(
+            "body",
+            "",
+        )
+    )
+
+    if not short:
+
+        raise ValueError(
+            "GPT returned no short teaser."
+        )
+
+    if not body:
+
+        raise ValueError(
+            "GPT returned no article body."
+        )
+
+    return {
+        "short": short,
+        "body": body,
+    }
+
+
+# ============================================================
+# STORY PAGE TEMPLATE
 # ============================================================
 
 PAGE = Template(
-    """<!doctype html>
+"""<!doctype html>
 <html lang="en">
 
 <head>
@@ -286,6 +1199,7 @@ $ogimg
 }
 
 @media (prefers-color-scheme: light) {
+
     :root {
         --bg: #f6f5f2;
         --surface: #ffffff;
@@ -311,12 +1225,6 @@ body {
 a {
     color: inherit;
     text-decoration: none;
-}
-
-:focus-visible {
-    outline: 3px solid var(--fg);
-    outline-offset: 3px;
-    border-radius: 4px;
 }
 
 .top {
@@ -351,10 +1259,6 @@ a {
     font-weight: 600;
     font-size: 14px;
     color: var(--mute);
-}
-
-.back:hover {
-    color: var(--fg);
 }
 
 article {
@@ -412,10 +1316,6 @@ h1 {
 .body p {
     font: 400 19px/1.75 "Source Serif 4", Georgia, serif;
     margin: 0 0 1.2em;
-}
-
-.body p:first-child::first-line {
-    font-weight: 600;
 }
 
 .src {
@@ -495,10 +1395,10 @@ Read the original at $source →
 
 <p class="note">
 
-This explainer was written automatically from the
-source headline and feed text.
+Policy Dossier automatically produces a neutral explainer
+from source material supplied by the original publication.
 
-Read the original publication for the full report.
+Read the linked original report for the complete source.
 
 <a
     href="$xurl"
@@ -520,32 +1420,44 @@ Read the original publication for the full report.
 
 
 # ============================================================
-# WEBSITE GENERATION
+# GENERATE WEBSITE STORY PAGES
 # ============================================================
 
 def write_pages(stories):
-    """Generate an HTML page for every story."""
 
-    os.makedirs("stories", exist_ok=True)
+    os.makedirs(
+        "stories",
+        exist_ok=True,
+    )
 
     for story in stories:
 
-        escape = lambda value: html.escape(
-            str(value),
-            quote=True,
+        def escape(value):
+
+            return html.escape(
+                str(value),
+                quote=True,
+            )
+
+        image = story.get(
+            "image",
+            "",
         )
 
-        image = story.get("image", "")
-
         article_text = (
-            story.get("body")
-            or story.get("summary")
+            story.get(
+                "body"
+            )
+            or story.get(
+                "summary"
+            )
             or ""
         )
 
         paragraphs = [
             paragraph.strip()
-            for paragraph in re.split(
+            for paragraph
+            in re.split(
                 r"\n+",
                 article_text,
             )
@@ -554,7 +1466,8 @@ def write_pages(stories):
 
         body_html = "".join(
             f"<p>{escape(paragraph)}</p>"
-            for paragraph in paragraphs
+            for paragraph
+            in paragraphs
         )
 
         article_url = (
@@ -563,12 +1476,15 @@ def write_pages(stories):
         )
 
         if image:
+
             og_image = (
-                '\n<meta property="og:image" '
+                '<meta property="og:image" '
                 f'content="{escape(image)}">'
             )
 
-            card = "summary_large_image"
+            card = (
+                "summary_large_image"
+            )
 
             hero = (
                 f'<img class="hero" '
@@ -582,38 +1498,56 @@ def write_pages(stories):
             )
 
         else:
+
             og_image = ""
+
             card = "summary"
+
             hero = ""
 
-        region_html = (
+        region = (
             "<i>Nigeria</i>"
-            if story.get("region") == "Nigeria"
+            if story.get(
+                "region"
+            ) == "Nigeria"
             else "World"
         )
 
         page = PAGE.substitute(
-            title=escape(story["title"]),
-            summary=escape(story["summary"]),
-            url=escape(article_url),
+            title=escape(
+                story["title"]
+            ),
+            summary=escape(
+                story["summary"]
+            ),
+            url=escape(
+                article_url
+            ),
             ogimg=og_image,
             card=card,
-            source=escape(story["source"]),
-            xurl=escape(X_URL),
-            region=region_html,
+            source=escape(
+                story["source"]
+            ),
+            xurl=escape(
+                X_URL
+            ),
+            region=region,
             date=escape(
                 story.get(
                     "published",
                     "",
                 )[:10]
             ),
-            link=escape(story["link"]),
+            link=escape(
+                story["link"]
+            ),
             body=body_html,
             hero=hero,
         )
 
         filename = (
-            f"stories/{story['id']}.html"
+            f"stories/"
+            f"{story['id']}.html"
         )
 
         with open(
@@ -621,127 +1555,66 @@ def write_pages(stories):
             "w",
             encoding="utf-8",
         ) as file:
+
             file.write(page)
 
 
 # ============================================================
-# STATE
+# LOAD / SAVE
 # ============================================================
 
-def load():
-    """Load existing stories."""
+def load_stories():
 
     try:
+
         with open(
             FILE,
             encoding="utf-8",
         ) as file:
-            data = json.load(file)
 
-        if isinstance(data, list):
-            return data
+            stories = json.load(
+                file
+            )
 
-        return []
+        if not isinstance(
+            stories,
+            list,
+        ):
+
+            return []
+
+        # Existing old stories should NOT suddenly repost to X.
+        for story in stories:
+
+            story.setdefault(
+                "x_posted",
+                True,
+            )
+
+        return stories
 
     except (
         FileNotFoundError,
         json.JSONDecodeError,
     ):
+
         return []
 
 
-# ============================================================
-# GPT WRITING
-# ============================================================
+def save_stories(stories):
 
-def write_up(client, title, text):
-    """
-    Generate:
-    - short teaser for X/homepage
-    - three-paragraph website explainer
+    with open(
+        FILE,
+        "w",
+        encoding="utf-8",
+    ) as file:
 
-    GPT is instructed not to invent information.
-    """
-
-    source_text = clean_text(text)
-
-    prompt = f"""
-You write for Policy Dossier, a neutral policy and
-public-affairs news publication.
-
-Use ONLY the information supplied below.
-
-Return valid JSON only, with exactly these fields:
-
-{{
-  "short": "A concise two-sentence teaser.",
-  "body": "A three-paragraph explainer."
-}}
-
-Requirements for "short":
-- Maximum 150 characters total.
-- Two short sentences.
-- Neutral and factual.
-- Suitable for an X post.
-- Do not use hashtags.
-- Do not use emojis.
-
-Requirements for "body":
-- Three clear paragraphs.
-- Aim for approximately 250 to 400 words ONLY if
-  the source material contains enough information.
-- If there is not enough information, write a shorter
-  article rather than inventing details.
-- Paragraph 1: what happened.
-- Paragraph 2: why it matters.
-- Paragraph 3: relevant context that is explicitly
-  supported by the supplied text.
-- Do not introduce facts, statistics, dates,
-  quotations, people, organisations or background
-  that are not present in the supplied material.
-- Do not copy long phrases from the source.
-- Do not add opinions.
-- Do not speculate.
-- Do not mention that you are an AI.
-
-Headline:
-{title}
-
-Source text:
-{source_text[:3500]}
-""".strip()
-
-    response = client.responses.create(
-        model=MODEL,
-        input=prompt,
-    )
-
-    result = parse_json_response(
-        response.output_text
-    )
-
-    short = normalise_text(
-        result.get("short", "")
-    )
-
-    body = normalise_text(
-        result.get("body", "")
-    )
-
-    if not short:
-        raise ValueError(
-            "GPT returned an empty short summary."
+        json.dump(
+            stories,
+            file,
+            indent=2,
+            ensure_ascii=False,
         )
-
-    if not body:
-        raise ValueError(
-            "GPT returned an empty article body."
-        )
-
-    return {
-        "short": short,
-        "body": body,
-    }
 
 
 # ============================================================
@@ -749,7 +1622,6 @@ Source text:
 # ============================================================
 
 def create_x_client():
-    """Create X API client using GitHub secrets."""
 
     required = [
         "X_API_KEY",
@@ -760,15 +1632,23 @@ def create_x_client():
 
     missing = [
         name
-        for name in required
-        if not os.environ.get(name)
+        for name
+        in required
+        if not os.environ.get(
+            name
+        )
     ]
 
     if missing:
+
         print(
-            "X posting disabled. Missing: "
-            + ", ".join(missing)
+            "X posting disabled. "
+            "Missing: "
+            + ", ".join(
+                missing
+            )
         )
+
         return None
 
     return tweepy.Client(
@@ -789,10 +1669,10 @@ def create_x_client():
 
 def build_x_post(story):
     """
-    Produce a deliberately short X post.
+    Create a short X update.
 
-    URLs are shortened by X, but keeping this under
-    ~250 characters provides a comfortable margin.
+    Website gets the full article.
+    X gets only a few lines.
     """
 
     article_url = (
@@ -808,10 +1688,15 @@ def build_x_post(story):
         story["summary"]
     )
 
-    if len(title) > 85:
-        title = title[:82].rstrip() + "..."
+    if len(title) > 80:
+
+        title = (
+            title[:77].rstrip()
+            + "..."
+        )
 
     if len(summary) > 105:
+
         summary = (
             summary[:102].rstrip()
             + "..."
@@ -823,7 +1708,88 @@ def build_x_post(story):
         f"Read more: {article_url}"
     )
 
+    # Final emergency trim.
+    if len(tweet) > 275:
+
+        excess = (
+            len(tweet)
+            - 275
+        )
+
+        new_length = max(
+            40,
+            len(summary)
+            - excess
+            - 3,
+        )
+
+        summary = (
+            summary[
+                :new_length
+            ].rstrip()
+            + "..."
+        )
+
+        tweet = (
+            f"{title}\n\n"
+            f"{summary}\n\n"
+            f"Read more: {article_url}"
+        )
+
     return tweet
+
+
+def post_pending_to_x(
+    stories,
+    x_client,
+    max_posts=4,
+):
+    """
+    Post stories that have not yet successfully reached X.
+    """
+
+    if x_client is None:
+        return
+
+    sent = 0
+
+    for story in stories:
+
+        if sent >= max_posts:
+            break
+
+        if story.get(
+            "x_posted",
+            True,
+        ):
+            continue
+
+        try:
+
+            x_client.create_tweet(
+                text=build_x_post(
+                    story
+                )
+            )
+
+            story[
+                "x_posted"
+            ] = True
+
+            sent += 1
+
+            print(
+                "Posted to X:",
+                story["title"],
+            )
+
+        except Exception as error:
+
+            print(
+                "X post failed for "
+                f"{story['title']}: "
+                f"{error}"
+            )
 
 
 # ============================================================
@@ -832,59 +1798,104 @@ def build_x_post(story):
 
 def main():
 
-    stories = load()
+    existing_stories = (
+        load_stories()
+    )
 
-    seen = {
+    existing_ids = {
         story["id"]
-        for story in stories
-        if story.get("id")
+        for story
+        in existing_stories
+        if story.get(
+            "id"
+        )
     }
 
-    ai = OpenAI()
+    candidate_ids = set()
 
-    x_client = create_x_client()
-
-    new = []
+    candidates = []
 
     now = dt.datetime.now(
         dt.timezone.utc
     )
 
+
     # --------------------------------------------------------
-    # FETCH RSS STORIES
+    # FETCH RSS FEEDS
     # --------------------------------------------------------
 
-    for source, (url, region) in FEEDS.items():
+    for source, (
+        feed_url,
+        region,
+    ) in FEEDS.items():
 
         try:
-            feed = feedparser.parse(url)
+
+            feed = feedparser.parse(
+                feed_url
+            )
 
         except Exception as error:
+
             print(
-                f"Feed failed: {source}: "
+                f"Feed failed: "
+                f"{source}: "
                 f"{error}"
             )
+
             continue
 
-        for entry in feed.entries[:10]:
 
-            link = entry.get("link")
+        for entry in (
+            feed.entries[:10]
+        ):
 
-            title = clean_text(
-                entry.get("title", "")
+            link = entry.get(
+                "link"
             )
 
-            if not link or not title:
+            title = clean_text(
+                entry.get(
+                    "title",
+                    "",
+                )
+            )
+
+            if (
+                not link
+                or not title
+            ):
+
                 continue
 
-            sid = hashlib.sha1(
-                link.encode("utf-8")
+            story_id = hashlib.sha1(
+                link.encode(
+                    "utf-8"
+                )
             ).hexdigest()[:16]
 
-            if sid in seen:
+            if (
+                story_id
+                in existing_ids
+            ):
+
                 continue
 
-            seen.add(sid)
+            if (
+                story_id
+                in candidate_ids
+            ):
+
+                continue
+
+            candidate_ids.add(
+                story_id
+            )
+
+
+            # -----------------------------------------------
+            # PUBLICATION DATE
+            # -----------------------------------------------
 
             published_struct = (
                 getattr(
@@ -900,8 +1911,11 @@ def main():
             )
 
             if published_struct:
-                timestamp = calendar.timegm(
-                    published_struct
+
+                timestamp = (
+                    calendar.timegm(
+                        published_struct
+                    )
                 )
 
                 published = (
@@ -912,33 +1926,41 @@ def main():
                 )
 
             else:
+
                 published = now
 
-            raw = (
-                entry.get("summary", "")
+
+            # -----------------------------------------------
+            # RSS FALLBACK TEXT
+            # -----------------------------------------------
+
+            rss_text = (
+                entry.get(
+                    "summary",
+                    "",
+                )
                 or "".join(
-                    content.get(
+                    item.get(
                         "value",
                         "",
                     )
-                    for content in entry.get(
+                    for item
+                    in entry.get(
                         "content",
                         [],
                     )
                 )
             )
 
-            new.append(
+
+            candidates.append(
                 {
-                    "id": sid,
+                    "id": story_id,
                     "title": title,
                     "link": link,
                     "source": source,
                     "region": region,
-                    "image": find_image(
-                        entry
-                    ),
-                    "raw": raw,
+                    "rss_text": rss_text,
                     "published": (
                         published
                         .isoformat()
@@ -950,116 +1972,196 @@ def main():
                 }
             )
 
-    # Most recent first.
-    new.sort(
-        key=lambda story: story[
-            "published"
-        ],
+
+    # --------------------------------------------------------
+    # SORT NEWEST FIRST
+    # --------------------------------------------------------
+
+    candidates.sort(
+        key=lambda story: (
+            story[
+                "published"
+            ]
+        ),
         reverse=True,
     )
 
-    # Nigeria first while preserving date order.
-    new.sort(
-        key=lambda story:
-            story["region"] != "Nigeria"
-    )
 
     # --------------------------------------------------------
-    # WRITE NEW STORIES
+    # NIGERIA FIRST
     # --------------------------------------------------------
+
+    candidates.sort(
+        key=lambda story: (
+            story[
+                "region"
+            ] != "Nigeria"
+        )
+    )
+
+
+    # --------------------------------------------------------
+    # CHOOSE DIFFERENT PUBLISHERS
+    # --------------------------------------------------------
+
+    selected = (
+        choose_diverse_stories(
+            candidates,
+            MAX_NEW_PER_RUN,
+        )
+    )
+
+    print(
+        "Selected stories:"
+    )
+
+    for story in selected:
+
+        print(
+            f"- {story['source']}: "
+            f"{story['title']}"
+        )
+
+
+    # --------------------------------------------------------
+    # GET ACTUAL ARTICLE TEXT + PHOTO
+    # --------------------------------------------------------
+
+    for story in selected:
+
+        article_text, image = (
+            fetch_article_data(
+                story["link"]
+            )
+        )
+
+        story[
+            "article_text"
+        ] = article_text
+
+        story[
+            "image"
+        ] = image
+
+
+    # If the same image appears on more than one story,
+    # remove it from all of them.
+    remove_duplicate_images(
+        selected
+    )
+
+
+    # --------------------------------------------------------
+    # OPENAI
+    # --------------------------------------------------------
+
+    ai = OpenAI()
 
     processed = []
 
-    for story in new[
-        :MAX_NEW_PER_RUN
-    ]:
-
-        raw = story.pop(
-            "raw",
-            "",
-        )
+    for story in selected:
 
         try:
-            writeup = write_up(
+
+            result = write_up(
                 ai,
                 story["title"],
-                raw,
+                story["source"],
+                story.get(
+                    "article_text",
+                    "",
+                ),
+                story.get(
+                    "rss_text",
+                    "",
+                ),
             )
 
         except Exception as error:
+
             print(
-                "GPT write-up failed for "
-                f"{story['link']}: "
+                "GPT failed for "
+                f"{story['title']}: "
                 f"{error}"
             )
+
             continue
 
-        story["summary"] = (
-            writeup["short"].strip()
+
+        story[
+            "summary"
+        ] = result[
+            "short"
+        ].strip()
+
+        story[
+            "body"
+        ] = result[
+            "body"
+        ].strip()
+
+        story[
+            "x_posted"
+        ] = False
+
+
+        # Never store source article text in stories.json.
+        story.pop(
+            "article_text",
+            None,
         )
 
-        story["body"] = (
-            writeup["body"].strip()
+        story.pop(
+            "rss_text",
+            None,
         )
 
-        processed.append(story)
+        processed.append(
+            story
+        )
 
-        # ----------------------------------------------------
-        # POST SHORT VERSION TO X
-        # ----------------------------------------------------
 
-        if x_client is not None:
+    # --------------------------------------------------------
+    # ADD NEW STORIES
+    # --------------------------------------------------------
 
-            tweet = build_x_post(
-                story
-            )
-
-            try:
-                x_client.create_tweet(
-                    text=tweet
-                )
-
-                print(
-                    "Posted to X: "
-                    + story["title"]
-                )
-
-            except Exception as error:
-                # X failure does NOT prevent website update.
-                print(
-                    "X post failed for "
-                    f"{story['link']}: "
-                    f"{error}"
-                )
-
-    # Keep newest processed stories first.
     stories = (
         processed
-        + stories
+        + existing_stories
     )[:KEEP]
 
-    # --------------------------------------------------------
-    # BUILD WEBSITE
-    # --------------------------------------------------------
-
-    write_pages(stories)
 
     # --------------------------------------------------------
-    # SAVE JSON
+    # GENERATE WEBSITE ARTICLES
     # --------------------------------------------------------
 
-    with open(
-        FILE,
-        "w",
-        encoding="utf-8",
-    ) as file:
+    write_pages(
+        stories
+    )
 
-        json.dump(
-            stories,
-            file,
-            indent=2,
-            ensure_ascii=False,
-        )
+
+    # --------------------------------------------------------
+    # POST SHORT VERSION TO X
+    # --------------------------------------------------------
+
+    x_client = (
+        create_x_client()
+    )
+
+    post_pending_to_x(
+        stories,
+        x_client,
+        max_posts=MAX_NEW_PER_RUN,
+    )
+
+
+    # --------------------------------------------------------
+    # SAVE
+    # --------------------------------------------------------
+
+    save_stories(
+        stories
+    )
 
     print(
         f"Completed. "
