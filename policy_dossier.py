@@ -132,17 +132,19 @@ def main():
     new.sort(key=lambda s: s["published"], reverse=True)
     new.sort(key=lambda s: s["region"] != "Nigeria")  # Nigerian news first (stable sort)
     for s in new[:MAX_NEW_PER_RUN]:
-        w = write_up(ai, s["title"], s.pop("raw"))
+         w = write_up(ai, s["title"], s.pop("raw"))
+
         s["summary"] = w["short"].strip()
 
-body = w["body"]
+        body = w["body"]
 
-if isinstance(body, dict):
-    body = "\n\n".join(str(v) for v in body.values())
-elif isinstance(body, list):
-    body = "\n\n".join(str(v) for v in body)
+        if isinstance(body, dict):
+            body = "\n\n".join(str(v) for v in body.values())
+        elif isinstance(body, list):
+            body = "\n\n".join(str(v) for v in body)
 
-s["body"] = body.strip()
+        s["body"] = body.strip()
+
         stories.insert(0, s)
         tweet = f'{s["title"][:110]}\n\n{s["summary"][:150]}\n\nRead the full story: {SITE_URL}/stories/{s["id"]}.html'
         try:
