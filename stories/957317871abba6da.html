@@ -66,7 +66,6 @@
 }
 
 @media (prefers-color-scheme: light) {
-
     :root {
         --bg: #f6f5f2;
         --surface: #ffffff;
@@ -128,6 +127,10 @@ a {
     color: var(--mute);
 }
 
+.back:hover {
+    color: var(--fg);
+}
+
 article {
     max-width: 720px;
     margin: 0 auto;
@@ -168,7 +171,7 @@ h1 {
 .hero {
     display: block;
     width: 100%;
-    aspect-ratio: 16/9;
+    max-height: 500px;
     object-fit: cover;
     border-radius: 10px;
     background: var(--line);
@@ -176,31 +179,38 @@ h1 {
 
 .credit {
     color: var(--mute);
-    font-size: 13px;
-    margin: 8px 0 32px;
+    font-size: 12px;
+    margin: 7px 0 30px;
 }
 
 .body p {
     font: 400 19px/1.75 "Source Serif 4", Georgia, serif;
-    margin: 0 0 1.2em;
+    margin: 0 0 1.25em;
 }
 
-.src {
-    display: inline-block;
-    margin-top: 12px;
-    background: var(--fg);
-    color: var(--bg);
-    border-radius: 999px;
-    padding: 12px 24px;
+.source-line {
+    margin-top: 36px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    color: var(--mute);
+    font-size: 14px;
+}
+
+.source-line a {
+    color: var(--fg);
     font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .note {
     color: var(--mute);
     font-size: 13px;
-    margin-top: 28px;
-    border-top: 1px solid var(--line);
-    padding-top: 18px;
+    margin-top: 18px;
+}
+
+.note a:hover {
+    color: var(--fg);
 }
 
 </style>
@@ -245,36 +255,31 @@ h1 {
 2026-10-25
 </div>
 
-<img class="hero" src="https://punchng.com/wikes-scholarship-beneficiary-emerges-abuads-best-law-graduate/#primaryimage" alt="" referrerpolicy="no-referrer" onerror="this.remove()"><div class="credit">Image: Punch</div>
+<img class="hero" src="https://punchng.com/wikes-scholarship-beneficiary-emerges-abuads-best-law-graduate/#primaryimage" alt="" loading="eager"><div class="credit">Image: Punch</div>
 
 <div class="body">
 <p>Nengi Donald Jaja, who received a Rivers State Government scholarship in 2017, has been named the overall Best Graduating Student in Afe Babalola University’s College of Law. He says he also received 12 awards and was the college’s salutatorian, describing the result as the fulfilment of a goal he had set for himself as a child.</p><p>In a post on X, Jaja said the scholarship followed a performance at an event in December 2017. It was intended to fund his education through secondary school and university. A report published by Tribune that month said former Rivers State Governor Nyesom Wike awarded him a ₦40 million scholarship after he sang at a thanksgiving service in Port Harcourt.</p><p>Jaja said the support encouraged him to pursue academic achievement while retaining his ambition to become an R&amp;B and soul artiste. He reported earning a 5.00 GPA in eight of his ten university semesters, with scores of 4.96 and 4.87 in the other two. Across his studies, he said, he received 69 As and two Bs, while also holding several leadership positions. He added that he had been the best Arts student in secondary school.</p><p>Jaja credited his family, friends and lecturers for supporting him, and said music by singer Tems helped him stay emotionally grounded. He also described himself as the first male student to achieve the College of Law distinction. His account highlights the role the state-funded award played in enabling his education, while his academic record and honours mark the outcome of his studies at ABUAD.</p>
 </div>
 
+<p class="source-line">
+Source:
 <a
-    class="src"
     href="https://punchng.com/wikes-scholarship-beneficiary-emerges-abuads-best-law-graduate/?utm_source=rss.punchng.com&amp;utm_medium=web"
     target="_blank"
     rel="noopener"
 >
-Read the original at Punch →
+Punch
 </a>
+</p>
 
 <p class="note">
-
-Policy Dossier automatically produces a neutral explainer
-from source material supplied by the original publication.
-
-Read the linked original report for the complete source.
-
 <a
     href="https://x.com/Policydossier"
     target="_blank"
     rel="noopener"
 >
-<u>Follow Policy Dossier on X</u>
+Follow Policy Dossier on X
 </a>
-
 </p>
 
 </article>

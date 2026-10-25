@@ -66,7 +66,6 @@
 }
 
 @media (prefers-color-scheme: light) {
-
     :root {
         --bg: #f6f5f2;
         --surface: #ffffff;
@@ -128,6 +127,10 @@ a {
     color: var(--mute);
 }
 
+.back:hover {
+    color: var(--fg);
+}
+
 article {
     max-width: 720px;
     margin: 0 auto;
@@ -168,7 +171,7 @@ h1 {
 .hero {
     display: block;
     width: 100%;
-    aspect-ratio: 16/9;
+    max-height: 500px;
     object-fit: cover;
     border-radius: 10px;
     background: var(--line);
@@ -176,31 +179,38 @@ h1 {
 
 .credit {
     color: var(--mute);
-    font-size: 13px;
-    margin: 8px 0 32px;
+    font-size: 12px;
+    margin: 7px 0 30px;
 }
 
 .body p {
     font: 400 19px/1.75 "Source Serif 4", Georgia, serif;
-    margin: 0 0 1.2em;
+    margin: 0 0 1.25em;
 }
 
-.src {
-    display: inline-block;
-    margin-top: 12px;
-    background: var(--fg);
-    color: var(--bg);
-    border-radius: 999px;
-    padding: 12px 24px;
+.source-line {
+    margin-top: 36px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    color: var(--mute);
+    font-size: 14px;
+}
+
+.source-line a {
+    color: var(--fg);
     font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .note {
     color: var(--mute);
     font-size: 13px;
-    margin-top: 28px;
-    border-top: 1px solid var(--line);
-    padding-top: 18px;
+    margin-top: 18px;
+}
+
+.note a:hover {
+    color: var(--fg);
 }
 
 </style>
@@ -245,36 +255,31 @@ h1 {
 2026-10-25
 </div>
 
-<img class="hero" src="https://cdn.punchng.com/wp-content/uploads/2020/08/18131509/punch-logo-500x179-1.png" alt="" referrerpolicy="no-referrer" onerror="this.remove()"><div class="credit">Image: Punch</div>
+<img class="hero" src="https://cdn.punchng.com/wp-content/uploads/2020/08/18131509/punch-logo-500x179-1.png" alt="" loading="eager"><div class="credit">Image: Punch</div>
 
 <div class="body">
 <p>The Bauchi State Police Command has arrested two people suspected of belonging to a gang accused of robbing residents and inflicting machete injuries on them.</p><p>The allegations involve both robbery and physical harm to residents. The available information does not say how many people were affected or describe the injuries beyond noting machete wounds.</p><p>The arrests were announced by the Bauchi State Police Command. No further details about the suspects, the alleged incidents or the investigation were provided in the supplied report.</p>
 </div>
 
+<p class="source-line">
+Source:
 <a
-    class="src"
     href="https://punchng.com/police-arrest-two-robbery-suspects-in-bauchi-3/?utm_source=rss.punchng.com&amp;utm_medium=web"
     target="_blank"
     rel="noopener"
 >
-Read the original at Punch →
+Punch
 </a>
+</p>
 
 <p class="note">
-
-Policy Dossier automatically produces a neutral explainer
-from source material supplied by the original publication.
-
-Read the linked original report for the complete source.
-
 <a
     href="https://x.com/Policydossier"
     target="_blank"
     rel="noopener"
 >
-<u>Follow Policy Dossier on X</u>
+Follow Policy Dossier on X
 </a>
-
 </p>
 
 </article>

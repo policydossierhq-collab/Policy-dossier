@@ -66,7 +66,6 @@
 }
 
 @media (prefers-color-scheme: light) {
-
     :root {
         --bg: #f6f5f2;
         --surface: #ffffff;
@@ -128,6 +127,10 @@ a {
     color: var(--mute);
 }
 
+.back:hover {
+    color: var(--fg);
+}
+
 article {
     max-width: 720px;
     margin: 0 auto;
@@ -168,7 +171,7 @@ h1 {
 .hero {
     display: block;
     width: 100%;
-    aspect-ratio: 16/9;
+    max-height: 500px;
     object-fit: cover;
     border-radius: 10px;
     background: var(--line);
@@ -176,31 +179,38 @@ h1 {
 
 .credit {
     color: var(--mute);
-    font-size: 13px;
-    margin: 8px 0 32px;
+    font-size: 12px;
+    margin: 7px 0 30px;
 }
 
 .body p {
     font: 400 19px/1.75 "Source Serif 4", Georgia, serif;
-    margin: 0 0 1.2em;
+    margin: 0 0 1.25em;
 }
 
-.src {
-    display: inline-block;
-    margin-top: 12px;
-    background: var(--fg);
-    color: var(--bg);
-    border-radius: 999px;
-    padding: 12px 24px;
+.source-line {
+    margin-top: 36px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    color: var(--mute);
+    font-size: 14px;
+}
+
+.source-line a {
+    color: var(--fg);
     font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .note {
     color: var(--mute);
     font-size: 13px;
-    margin-top: 28px;
-    border-top: 1px solid var(--line);
-    padding-top: 18px;
+    margin-top: 18px;
+}
+
+.note a:hover {
+    color: var(--fg);
 }
 
 </style>
@@ -245,36 +255,31 @@ h1 {
 2026-10-25
 </div>
 
-<img class="hero" src="https://www.channelstv.com/2026/10/25/police-probe-fatal-shooting-of-two-officers-in-kogi/#primaryimage" alt="" referrerpolicy="no-referrer" onerror="this.remove()"><div class="credit">Image: Channels TV</div>
+<img class="hero" src="https://www.channelstv.com/2026/10/25/police-probe-fatal-shooting-of-two-officers-in-kogi/#primaryimage" alt="" loading="eager"><div class="credit">Image: Channels TV</div>
 
 <div class="body">
 <p>The Kogi State Police Command has opened an investigation into a fatal shooting at ASCO Camp in Ajaokuta that left two serving officers dead. Police said the incident was reported at 11:04 p.m. and that the Divisional Police Officer for Ajaokuta led officers to the scene.</p><p>According to the command’s preliminary findings, Corporal Amos Yusuf, who was on night duty, shot his colleague, Corporal Grace Onimisi, and then shot himself. Both officers were taken to separate medical facilities, where they were pronounced dead. Their remains were placed in the mortuary at ASCO Hospital. Police said an AK-47 rifle and four spent cartridges were recovered at the scene.</p><p>The case has been transferred to the State Criminal Investigation Department for further inquiries. Police said the circumstances and motive remain under investigation and that the command would not speculate about details that have not been established. The commissioner of police expressed condolences to the officers’ families, colleagues and loved ones; the command said it would issue verified updates as appropriate.</p>
 </div>
 
+<p class="source-line">
+Source:
 <a
-    class="src"
     href="https://www.channelstv.com/2026/10/25/police-probe-fatal-shooting-of-two-officers-in-kogi/"
     target="_blank"
     rel="noopener"
 >
-Read the original at Channels TV →
+Channels TV
 </a>
+</p>
 
 <p class="note">
-
-Policy Dossier automatically produces a neutral explainer
-from source material supplied by the original publication.
-
-Read the linked original report for the complete source.
-
 <a
     href="https://x.com/Policydossier"
     target="_blank"
     rel="noopener"
 >
-<u>Follow Policy Dossier on X</u>
+Follow Policy Dossier on X
 </a>
-
 </p>
 
 </article>

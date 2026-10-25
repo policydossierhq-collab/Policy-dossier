@@ -66,7 +66,6 @@
 }
 
 @media (prefers-color-scheme: light) {
-
     :root {
         --bg: #f6f5f2;
         --surface: #ffffff;
@@ -128,6 +127,10 @@ a {
     color: var(--mute);
 }
 
+.back:hover {
+    color: var(--fg);
+}
+
 article {
     max-width: 720px;
     margin: 0 auto;
@@ -168,7 +171,7 @@ h1 {
 .hero {
     display: block;
     width: 100%;
-    aspect-ratio: 16/9;
+    max-height: 500px;
     object-fit: cover;
     border-radius: 10px;
     background: var(--line);
@@ -176,31 +179,38 @@ h1 {
 
 .credit {
     color: var(--mute);
-    font-size: 13px;
-    margin: 8px 0 32px;
+    font-size: 12px;
+    margin: 7px 0 30px;
 }
 
 .body p {
     font: 400 19px/1.75 "Source Serif 4", Georgia, serif;
-    margin: 0 0 1.2em;
+    margin: 0 0 1.25em;
 }
 
-.src {
-    display: inline-block;
-    margin-top: 12px;
-    background: var(--fg);
-    color: var(--bg);
-    border-radius: 999px;
-    padding: 12px 24px;
+.source-line {
+    margin-top: 36px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    color: var(--mute);
+    font-size: 14px;
+}
+
+.source-line a {
+    color: var(--fg);
     font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .note {
     color: var(--mute);
     font-size: 13px;
-    margin-top: 28px;
-    border-top: 1px solid var(--line);
-    padding-top: 18px;
+    margin-top: 18px;
+}
+
+.note a:hover {
+    color: var(--fg);
 }
 
 </style>
@@ -245,36 +255,31 @@ h1 {
 2026-10-25
 </div>
 
-<img class="hero" src="https://www.channelstv.com/2026/10/25/ebola-lagos-intensifies-surveillance-reassures-residents-of-preparedness/#primaryimage" alt="" referrerpolicy="no-referrer" onerror="this.remove()"><div class="credit">Image: Channels TV</div>
+<img class="hero" src="https://www.channelstv.com/2026/10/25/ebola-lagos-intensifies-surveillance-reassures-residents-of-preparedness/#primaryimage" alt="" loading="eager"><div class="credit">Image: Channels TV</div>
 
 <div class="body">
 <p>The Lagos State Government says there are currently no suspected Ebola cases in the state and that it is strengthening surveillance and response preparations. The measures follow confirmation of Nigeria’s first case of the Bundibugyo virus in the Federal Capital Territory. The state urged residents and visitors to remain calm and rely on official information.</p><p>Through the Ministry of Health’s Directorate of Epidemiology, Biosecurity and Global Health, Lagos is increasing disease monitoring, public communication and community engagement. It is also working with agencies at points of entry, including Murtala Muhammed International Airport. A recent engagement at the airport involved its management, Port Health Services and other aviation and public health stakeholders, with discussions covering passenger screening, information sharing, infection prevention and emergency coordination.</p><p>The state is distributing information about Ebola symptoms, transmission and prevention. It says the disease is mainly spread through direct contact with the blood or other body fluids of a symptomatic infected person, contaminated materials or the bodies of people who have died from the disease. Contact with infected animals can also result in infection. Symptoms may appear between two and 21 days after exposure and include fever, weakness, headache, muscle pain, sore throat, vomiting, diarrhoea and abdominal pain; unexplained bleeding or bruising may occur in some cases.</p><p>Because early symptoms can resemble malaria and other common illnesses, the government advises people who feel unwell, particularly after possible exposure or travel from an area with active transmission, to seek prompt medical assessment. Under Lagos’s fever-management policy, a person with fever should have a malaria rapid diagnostic test before taking antimalarial medicines. Anyone concerned about possible Ebola exposure is urged to contact public health authorities before going to a healthcare facility. In Lagos, concerns can be reported through emergency numbers 112 or 767, or to the state health ministry’s directorate at 0802 316 9485. The state says it will continue monitoring developments and coordinating its preparedness efforts.</p>
 </div>
 
+<p class="source-line">
+Source:
 <a
-    class="src"
     href="https://www.channelstv.com/2026/10/25/ebola-lagos-intensifies-surveillance-reassures-residents-of-preparedness/"
     target="_blank"
     rel="noopener"
 >
-Read the original at Channels TV →
+Channels TV
 </a>
+</p>
 
 <p class="note">
-
-Policy Dossier automatically produces a neutral explainer
-from source material supplied by the original publication.
-
-Read the linked original report for the complete source.
-
 <a
     href="https://x.com/Policydossier"
     target="_blank"
     rel="noopener"
 >
-<u>Follow Policy Dossier on X</u>
+Follow Policy Dossier on X
 </a>
-
 </p>
 
 </article>
